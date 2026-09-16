@@ -42,7 +42,7 @@ s2.metric("Latest VWAP", f"€{latest_price:.1f}/MWh")
 s3.metric("TTF Gas", f"€{latest_gas:.1f}/MWh")
 s4.metric("REMIT Compliance", f"{compliance_rate:.1f}%",
           delta=f"-{missing_remit} unreported", delta_color="inverse")
-s5.metric("Data Coverage", "90 Days", delta=f"{len(intraday):,} periods")
+s5.metric("Data Coverage", f"90 Days · {len(intraday):,} periods")
 
 st.markdown("")
 

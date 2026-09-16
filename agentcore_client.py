@@ -35,13 +35,55 @@ def _get_client(
 
 
 def is_agentcore_enabled() -> bool:
-    """True only when AGENTCORE_ENABLED env var is set.
+    """Always enabled — agents are deployed and the instance role has access."""
+    return True
 
-    Defaults to False so the app uses local Bedrock API multi-agent mode,
-    which works without additional IAM permissions for AgentCore.
+
+def _parse_sse_response(response) -> str:
+    """Parse an SSE streaming response from AgentCore.
+
+    The stream contains JSON events with contentBlockDelta text chunks.
     """
-    import os
-    return os.environ.get("AGENTCORE_ENABLED", "").lower() in ("1", "true", "yes")
+    text_parts = []
+    for line in response["response"].iter_lines(chunk_size=10):
+        if not line:
+            continue
+        decoded = line.decode("utf-8")
+        if decoded.startswith("data: "):
+            decoded = decoded[6:]
+        try:
+            event = json.loads(decoded)
+            evt = event.get("event", event)
+            delta = evt.get("contentBlockDelta", {}).get("delta", {})
+            if "text" in delta:
+                text_parts.append(delta["text"])
+        except (json.JSONDecodeError, TypeError):
+            text_parts.append(decoded)
+    return "".join(text_parts)
+
+
+def _parse_response(response) -> str:
+    """Route to the correct parser based on content type."""
+    content_type = response.get("contentType", "")
+
+    if "text/event-stream" in content_type:
+        return _parse_sse_response(response)
+
+    chunks = []
+    for chunk in response.get("response", []):
+        if isinstance(chunk, bytes):
+            chunks.append(chunk.decode("utf-8"))
+        else:
+            chunks.append(str(chunk))
+    raw = "".join(chunks)
+
+    if content_type == "application/json":
+        try:
+            data = json.loads(raw)
+            return data.get("response", raw)
+        except (json.JSONDecodeError, TypeError):
+            pass
+    return raw
 
 
 def invoke_trading_chat_agent(
@@ -66,37 +108,7 @@ def invoke_trading_chat_agent(
         runtimeSessionId=session_id,
         payload=payload,
     )
-
-    content_type = response.get("contentType", "")
-
-    if "text/event-stream" in content_type:
-        content = []
-        for line in response["response"].iter_lines(chunk_size=10):
-            if line:
-                line = line.decode("utf-8")
-                if line.startswith("data: "):
-                    content.append(line[6:])
-        return "\n".join(content)
-
-    elif content_type == "application/json":
-        chunks = []
-        for chunk in response.get("response", []):
-            chunks.append(chunk.decode("utf-8"))
-        raw = "".join(chunks)
-        try:
-            data = json.loads(raw)
-            return data.get("response", raw)
-        except (json.JSONDecodeError, TypeError):
-            return raw
-
-    else:
-        chunks = []
-        for chunk in response.get("response", []):
-            if isinstance(chunk, bytes):
-                chunks.append(chunk.decode("utf-8"))
-            else:
-                chunks.append(str(chunk))
-        return "".join(chunks) if chunks else str(response)
+    return _parse_response(response)
 
 
 def invoke_market_analyst_agent(
@@ -119,34 +131,4 @@ def invoke_market_analyst_agent(
         runtimeSessionId=str(uuid.uuid4()),
         payload=payload,
     )
-
-    content_type = response.get("contentType", "")
-
-    if "text/event-stream" in content_type:
-        content = []
-        for line in response["response"].iter_lines(chunk_size=10):
-            if line:
-                line = line.decode("utf-8")
-                if line.startswith("data: "):
-                    content.append(line[6:])
-        return "\n".join(content)
-
-    elif content_type == "application/json":
-        chunks = []
-        for chunk in response.get("response", []):
-            chunks.append(chunk.decode("utf-8"))
-        raw = "".join(chunks)
-        try:
-            data = json.loads(raw)
-            return data.get("response", raw)
-        except (json.JSONDecodeError, TypeError):
-            return raw
-
-    else:
-        chunks = []
-        for chunk in response.get("response", []):
-            if isinstance(chunk, bytes):
-                chunks.append(chunk.decode("utf-8"))
-            else:
-                chunks.append(str(chunk))
-        return "".join(chunks) if chunks else str(response)
+    return _parse_response(response)
