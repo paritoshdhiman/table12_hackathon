@@ -2,8 +2,8 @@ import streamlit as st
 from data_loader import extract_data_if_needed
 
 st.set_page_config(
-    page_title="Energy Trading Optimizer",
-    page_icon="⚡",
+    page_title="DELTA — Dynamic Energy Load & Trading Analytics",
+    page_icon="▲",
     layout="wide",
     initial_sidebar_state="expanded",
 )
@@ -13,16 +13,16 @@ extract_data_if_needed()
 st.markdown("""
 <style>
     .stMetric {
-        background: #1a1f2e;
+        background: #1C1C1C;
         padding: 14px 16px;
         border-radius: 8px;
-        border: 1px solid #2a3040;
+        border: 1px solid #2A2A2A;
     }
-    .stMetric label { font-size: 0.82rem !important; color: #8892a0 !important; }
+    .stMetric label { font-size: 0.82rem !important; color: #9CA3AF !important; }
     .stMetric [data-testid="stMetricValue"] { font-size: 1.6rem !important; }
 
     div[data-testid="stSidebar"] {
-        background: linear-gradient(180deg, #0a0e17 0%, #131929 100%);
+        background: linear-gradient(180deg, #0A0A0A 0%, #1C1C1C 100%);
     }
 
     .status-badge {
@@ -32,28 +32,28 @@ st.markdown("""
         font-size: 0.75rem;
         font-weight: 600;
     }
-    .badge-live { background: #00D4AA22; color: #00D4AA; border: 1px solid #00D4AA44; }
-    .badge-warn { background: #FFB02E22; color: #FFB02E; border: 1px solid #FFB02E44; }
-    .badge-danger { background: #FF4B4B22; color: #FF4B4B; border: 1px solid #FF4B4B44; }
+    .badge-live { background: #DC262622; color: #DC2626; border: 1px solid #DC262644; }
+    .badge-warn { background: #F59E0B22; color: #F59E0B; border: 1px solid #F59E0B44; }
+    .badge-danger { background: #DC262622; color: #DC2626; border: 1px solid #DC262644; }
 
     .finding-box {
-        background: #1a1f2e;
-        border: 1px solid #2a3040;
+        background: #1C1C1C;
+        border: 1px solid #2A2A2A;
         border-radius: 8px;
         padding: 20px;
     }
     .finding-box h4 { margin: 0 0 8px 0; }
-    .finding-box p { color: #c0c8d4; font-size: 0.9rem; line-height: 1.55; margin: 0 0 8px 0; }
-    .finding-box .source { color: #666e7a; font-size: 0.78rem; font-style: italic; }
+    .finding-box p { color: #D1D5DB; font-size: 0.9rem; line-height: 1.55; margin: 0 0 8px 0; }
+    .finding-box .source { color: #6B7280; font-size: 0.78rem; font-style: italic; }
 
-    .nav-item { color: #c0c8d4; font-size: 0.9rem; line-height: 1.5; margin-bottom: 6px; }
-    .nav-label { color: #e0e4ea; font-weight: 600; }
+    .nav-item { color: #D1D5DB; font-size: 0.9rem; line-height: 1.5; margin-bottom: 6px; }
+    .nav-label { color: #F3F4F6; font-weight: 600; }
 </style>
 """, unsafe_allow_html=True)
 
 # ── Header ──────────────────────────────────────────────────────────────────
-st.markdown("# Intraday Energy Trading Optimizer")
-st.caption("DE-LU Bidding Zone · EPEX SPOT Continuous Market · Quarter-Hourly · 90-Day Analysis Window")
+st.markdown("# ▲ DELTA")
+st.caption("Dynamic Energy Load & Trading Analytics · DE-LU Bidding Zone · EPEX SPOT Continuous Market · Quarter-Hourly · 90-Day Analysis Window")
 
 # ── Live Status ─────────────────────────────────────────────────────────────
 from data_loader import load_trade_blotter, load_remit_transactions, load_intraday_prices, load_fuel_prices
@@ -85,7 +85,7 @@ col_l, col_r = st.columns(2)
 with col_l:
     st.markdown("""
     <div class="finding-box">
-        <h4 style="color: #FF4B4B;">CCGT Overcommitment Risk</h4>
+        <h4 style="color: #DC2626;">CCGT Overcommitment Risk</h4>
         <p>Peak-hour contract obligations total <strong>450 MW</strong>
         (BL-001: 200 MW + PK-001: 150 MW + BL-002: 100 MW)
         but RHEIN_CCGT maximum capacity is <strong>430 MW</strong>.</p>
@@ -97,7 +97,7 @@ with col_l:
 with col_r:
     st.markdown(f"""
     <div class="finding-box">
-        <h4 style="color: #FFB02E;">REMIT Compliance Gap</h4>
+        <h4 style="color: #F59E0B;">REMIT Compliance Gap</h4>
         <p><strong>{missing_remit} trades</strong> have no REMIT report filed — violates EU Regulation 2024/1106
         requiring T+1 business day reporting to ACER.</p>
         <p><strong>Penalty exposure:</strong> up to €{missing_remit * 500:,}K (€500K per violation)</p>
@@ -108,10 +108,10 @@ with col_r:
 st.markdown("")
 
 # ── Architecture ────────────────────────────────────────────────────────────
-st.markdown("### System Architecture")
+st.markdown("### Multi-Agent Architecture")
 st.markdown(
-    "Claude Opus 4.6 on Amazon Bedrock via Strands Agents SDK — "
-    "10 specialized data-query tools, each returning source-cited answers. "
+    "**5 Claude Opus 4.6 agents** on Amazon Bedrock via Strands Agents SDK — "
+    "1 orchestrator routes queries to 4 specialist agents, each with dedicated tools and domain expertise. "
     "Greedy merit-order dispatch optimizer with Willans-line part-load efficiency, "
     "temperature-corrected capacity derating, and start-up cost economics."
 )
@@ -119,19 +119,19 @@ st.markdown(
 arch_l, arch_r = st.columns(2)
 with arch_l:
     st.markdown("""
-**Analysis capabilities**
-- Market analysis across 8,640 quarter-hourly price periods
-- Merit-order dispatch optimization with ramp and min-load constraints
-- Scenario simulation: gas, carbon, wind, solar, demand parameters
-- REMIT II compliance monitoring with gap detection
+**Specialist agents** (each a separate Claude instance)
+- **Market Analyst** — prices, spreads, fuel trends, renewable forecasts (4 tools)
+- **Dispatch Optimizer** — SRMC, merit-order, start-up costs, ramp constraints (5 tools)
+- **Compliance Officer** — REMIT reporting, contract tolerances, penalties (4 tools)
+- **Risk Manager** — P&L, imbalance exposure, strategy performance (4 tools)
 """)
 with arch_r:
     st.markdown("""
-**Risk and compliance**
-- Value-at-Risk (95%/99%) with historical simulation
-- Contract overcommitment detection (450 MW peak vs 430 MW capacity)
-- Imbalance exposure tracking — short/long price spread analysis
-- Renewable forecast error quantification (RMSE, bias)
+**Analytical capabilities**
+- Merit-order dispatch optimization with Willans-line part-load efficiency
+- Scenario simulation: 5x5 gas/carbon sensitivity grid
+- Value-at-Risk (95%/99%) with drawdown and rolling breach detection
+- CCGT overcommitment detection (450 MW contracted vs 430 MW capacity)
 """)
 
 st.markdown("")
@@ -157,8 +157,8 @@ with n3:
 """, unsafe_allow_html=True)
 
 st.caption(
-    "AI Model: Claude Opus 4.6 via Amazon Bedrock · "
-    "Agent: Strands SDK 1.56 · "
+    "AI: 5 Claude Opus 4.6 agents via Amazon Bedrock (1 orchestrator + 4 specialists) · "
+    "Framework: Strands Agents SDK 1.56 · "
     "Frontend: Streamlit + Plotly · "
     "Data: 12 CSVs, 55,060 rows, 90 days EPEX SPOT DE-LU · "
     "Grounding: every number traces to source file and row"

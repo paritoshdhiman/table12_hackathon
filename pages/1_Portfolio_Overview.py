@@ -88,7 +88,7 @@ with col_right:
         trades_by_dir, x="Strategy", y="Count", color="Direction",
         barmode="group",
         title="Trade Count by Strategy & Direction",
-        color_discrete_map={"BUY": "#636EFA", "SELL": "#EF553B"},
+        color_discrete_map={"BUY": "#9CA3AF", "SELL": "#DC2626"},
     )
     apply_dark_theme(fig2)
     st.plotly_chart(fig2, use_container_width=True)
@@ -103,7 +103,7 @@ fig3 = px.line(
     title="Cumulative Portfolio P&L",
     labels={"timestamp_executed": "Date", "cumulative_pnl": "Cumulative P&L (€)"},
 )
-fig3.update_traces(line_color="#00D4AA", fill="tozeroy", fillcolor="rgba(0, 212, 170, 0.1)")
+fig3.update_traces(line_color="#DC2626", fill="tozeroy", fillcolor="rgba(220, 38, 38, 0.1)")
 apply_dark_theme(fig3)
 st.plotly_chart(fig3, use_container_width=True)
 st.caption("Source: trade_blotter.csv, pnl_eur cumulative sum ordered by timestamp_executed")

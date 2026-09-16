@@ -9,14 +9,14 @@ DARK_LAYOUT = dict(
 )
 
 COLORS = {
-    "RHEIN_CCGT": "#636EFA",
-    "ISAR_OCGT": "#EF553B",
-    "NORDSEE_WIND": "#00D4AA",
-    "BAYERN_SOLAR": "#FFA15A",
-    "primary": "#00D4AA",
-    "secondary": "#00A3FF",
-    "danger": "#FF4B4B",
-    "warning": "#FFB02E",
+    "RHEIN_CCGT": "#DC2626",
+    "ISAR_OCGT": "#9CA3AF",
+    "NORDSEE_WIND": "#EF4444",
+    "BAYERN_SOLAR": "#6B7280",
+    "primary": "#DC2626",
+    "secondary": "#9CA3AF",
+    "danger": "#DC2626",
+    "warning": "#F59E0B",
 }
 
 

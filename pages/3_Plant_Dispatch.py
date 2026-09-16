@@ -71,10 +71,10 @@ if st.button("⚡ Optimize Dispatch", type="primary"):
         ).fillna(0)
 
         color_map = {
-            "RHEIN_CCGT": "#636EFA",
-            "ISAR_OCGT": "#EF553B",
-            "NORDSEE_WIND": "#00D4AA",
-            "BAYERN_SOLAR": "#FFA15A",
+            "RHEIN_CCGT": "#DC2626",
+            "ISAR_OCGT": "#9CA3AF",
+            "NORDSEE_WIND": "#EF4444",
+            "BAYERN_SOLAR": "#6B7280",
         }
         fig = go.Figure()
         for plant_id in ["BAYERN_SOLAR", "NORDSEE_WIND", "RHEIN_CCGT", "ISAR_OCGT"]:
@@ -111,9 +111,9 @@ if st.button("⚡ Optimize Dispatch", type="primary"):
             y=waterfall_margins + [sum(waterfall_margins)],
             measure=["relative"] * len(waterfall_plants) + ["total"],
             connector={"line": {"color": "#444"}},
-            increasing={"marker": {"color": "#00D4AA"}},
-            decreasing={"marker": {"color": "#FF4B4B"}},
-            totals={"marker": {"color": "#636EFA"}},
+            increasing={"marker": {"color": "#9CA3AF"}},
+            decreasing={"marker": {"color": "#DC2626"}},
+            totals={"marker": {"color": "#111111"}},
             textposition="outside",
             text=[f"€{v:,.0f}" for v in waterfall_margins] + [f"€{sum(waterfall_margins):,.0f}"],
         ))

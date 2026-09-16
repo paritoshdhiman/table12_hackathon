@@ -38,7 +38,7 @@ with tab1:
         fig = px.pie(
             status_df, values="Count", names="Status",
             title="REMIT Report Status Distribution",
-            color_discrete_sequence=["#00D4AA", "#636EFA", "#FFB02E", "#FF4B4B"],
+            color_discrete_sequence=["#DC2626", "#9CA3AF", "#F59E0B", "#EF4444"],
         )
         apply_dark_theme(fig)
         st.plotly_chart(fig, use_container_width=True)
@@ -102,11 +102,11 @@ with tab2:
     fig_ob = go.Figure()
     fig_ob.add_trace(go.Bar(
         x=obligations["contract_id"], y=obligations["committed_mwh"],
-        name="Committed", marker_color="#636EFA",
+        name="Committed", marker_color="#9CA3AF",
     ))
     fig_ob.add_trace(go.Bar(
         x=obligations["contract_id"], y=obligations["delivered_mwh"],
-        name="Delivered", marker_color="#00D4AA",
+        name="Delivered", marker_color="#DC2626",
     ))
     fig_ob.update_layout(
         title="Committed vs Delivered Volume",
@@ -137,7 +137,7 @@ with tab3:
         fig_state = px.pie(
             state_df, values="Count", names="State",
             title="System Regulation State Distribution",
-            color_discrete_map={"SHORT": "#EF553B", "LONG": "#636EFA", "BALANCED": "#00D4AA"},
+            color_discrete_map={"SHORT": "#DC2626", "LONG": "#9CA3AF", "BALANCED": "#6B7280"},
         )
         apply_dark_theme(fig_state)
         st.plotly_chart(fig_state, use_container_width=True)
@@ -164,11 +164,11 @@ with tab3:
     fig_ts = go.Figure()
     fig_ts.add_trace(go.Scatter(
         x=imbalance["timestamp_utc"], y=imbalance["imbalance_price_short_eur_mwh"],
-        name="Short Price", line=dict(color="#EF553B", width=0.8),
+        name="Short Price", line=dict(color="#DC2626", width=0.8),
     ))
     fig_ts.add_trace(go.Scatter(
         x=imbalance["timestamp_utc"], y=imbalance["imbalance_price_long_eur_mwh"],
-        name="Long Price", line=dict(color="#636EFA", width=0.8),
+        name="Long Price", line=dict(color="#9CA3AF", width=0.8),
     ))
     fig_ts.update_layout(
         title="Imbalance Settlement Prices",
@@ -200,11 +200,11 @@ with tab4:
         fig_var = go.Figure()
         fig_var.add_trace(go.Histogram(
             x=daily_pnl.values, nbinsx=40, name="Daily P&L",
-            marker_color="#636EFA", opacity=0.7,
+            marker_color="#9CA3AF", opacity=0.7,
         ))
-        fig_var.add_vline(x=var_95, line_dash="dash", line_color="#FFB02E",
+        fig_var.add_vline(x=var_95, line_dash="dash", line_color="#F59E0B",
                           annotation_text=f"VaR 95% = €{var_95:,.0f}")
-        fig_var.add_vline(x=var_99, line_dash="dash", line_color="#FF4B4B",
+        fig_var.add_vline(x=var_99, line_dash="dash", line_color="#DC2626",
                           annotation_text=f"VaR 99% = €{var_99:,.0f}")
         fig_var.add_vline(x=0, line_color="white", line_width=0.5)
         fig_var.update_layout(
@@ -223,13 +223,13 @@ with tab4:
         fig_dd = go.Figure()
         fig_dd.add_trace(go.Scatter(
             x=cumulative.index, y=cumulative.values,
-            name="Cumulative P&L", line=dict(color="#00D4AA", width=2),
+            name="Cumulative P&L", line=dict(color="#DC2626", width=2),
         ))
         fig_dd.add_trace(go.Scatter(
             x=drawdown.index, y=drawdown.values,
             name="Drawdown", fill="tozeroy",
             fillcolor="rgba(255, 75, 75, 0.2)",
-            line=dict(color="#FF4B4B", width=1),
+            line=dict(color="#EF4444", width=1),
         ))
         fig_dd.update_layout(
             title="Cumulative P&L and Drawdown",
@@ -243,14 +243,14 @@ with tab4:
     fig_rvar = go.Figure()
     fig_rvar.add_trace(go.Scatter(
         x=rolling_var.index, y=rolling_var.values,
-        name="Rolling 7d VaR 95%", line=dict(color="#FFB02E", width=2),
+        name="Rolling 7d VaR 95%", line=dict(color="#F59E0B", width=2),
         fill="tozeroy", fillcolor="rgba(255, 176, 46, 0.1)",
     ))
     fig_rvar.add_trace(go.Scatter(
         x=daily_pnl.index, y=daily_pnl.values,
         name="Daily P&L", mode="markers",
         marker=dict(
-            color=["#FF4B4B" if v < rolling_var.get(d, 0) else "#00D4AA"
+            color=["#DC2626" if v < rolling_var.get(d, 0) else "#9CA3AF"
                    for d, v in zip(daily_pnl.index, daily_pnl.values)],
             size=5,
         ),

@@ -38,7 +38,7 @@ with tab1:
     fig = go.Figure()
     fig.add_trace(go.Scatter(
         x=filtered["timestamp_utc"], y=filtered["vwap_eur_mwh"],
-        name="Intraday VWAP", line=dict(color="#636EFA", width=1),
+        name="Intraday VWAP", line=dict(color="#DC2626", width=1),
     ))
     fig.add_trace(go.Scatter(
         x=filtered["timestamp_utc"], y=filtered["high_eur_mwh"],
@@ -47,11 +47,11 @@ with tab1:
     fig.add_trace(go.Scatter(
         x=filtered["timestamp_utc"], y=filtered["low_eur_mwh"],
         name="Low", line=dict(width=0), fill="tonexty",
-        fillcolor="rgba(99, 110, 250, 0.1)", showlegend=False,
+        fillcolor="rgba(220, 38, 38, 0.1)", showlegend=False,
     ))
     fig.add_trace(go.Scatter(
         x=filtered["timestamp_utc"], y=filtered["day_ahead_price_eur_mwh"],
-        name="Day-Ahead", line=dict(color="#EF553B", width=1, dash="dot"),
+        name="Day-Ahead", line=dict(color="#9CA3AF", width=1, dash="dot"),
     ))
     fig.update_layout(
         title="Electricity Prices (€/MWh)",
@@ -78,7 +78,7 @@ with tab2:
             filtered, x="spread_id_vs_da_eur_mwh", nbins=80,
             title="Spread Distribution (ID - DA)",
             labels={"spread_id_vs_da_eur_mwh": "Spread (€/MWh)"},
-            color_discrete_sequence=["#636EFA"],
+            color_discrete_sequence=["#DC2626"],
         )
         fig_hist.add_vline(x=0, line_dash="dash", line_color="red")
         apply_dark_theme(fig_hist)
@@ -153,11 +153,11 @@ with tab4:
         fig_re.add_trace(go.Scatter(
             x=renew_f["timestamp_utc"], y=renew_f["wind_p10_mw"],
             name="P10", line=dict(width=0), fill="tonexty",
-            fillcolor="rgba(99, 110, 250, 0.15)",
+            fillcolor="rgba(220, 38, 38, 0.15)",
         ))
         fig_re.add_trace(go.Scatter(
             x=renew_f["timestamp_utc"], y=renew_f["wind_forecast_mw"],
-            name="Forecast", line=dict(color="#636EFA", width=1.5),
+            name="Forecast", line=dict(color="#DC2626", width=1.5),
         ))
         fig_re.update_layout(title="Wind Generation Forecast (MW)", height=450, yaxis_title="MW")
     else:

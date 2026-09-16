@@ -86,8 +86,8 @@ if st.button("🚀 Run Scenario Comparison", type="primary"):
 
         st.header("Dispatch Comparison")
         color_map = {
-            "RHEIN_CCGT": "#636EFA", "ISAR_OCGT": "#EF553B",
-            "NORDSEE_WIND": "#00D4AA", "BAYERN_SOLAR": "#FFA15A",
+            "RHEIN_CCGT": "#DC2626", "ISAR_OCGT": "#9CA3AF",
+            "NORDSEE_WIND": "#EF4444", "BAYERN_SOLAR": "#6B7280",
         }
         plant_order = ["BAYERN_SOLAR", "NORDSEE_WIND", "RHEIN_CCGT", "ISAR_OCGT"]
 
