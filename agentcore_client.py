@@ -35,8 +35,13 @@ def _get_client(
 
 
 def is_agentcore_enabled() -> bool:
-    """Always true — agents are deployed."""
-    return True
+    """True only when AGENTCORE_ENABLED env var is set.
+
+    Defaults to False so the app uses local Bedrock API multi-agent mode,
+    which works without additional IAM permissions for AgentCore.
+    """
+    import os
+    return os.environ.get("AGENTCORE_ENABLED", "").lower() in ("1", "true", "yes")
 
 
 def invoke_trading_chat_agent(
