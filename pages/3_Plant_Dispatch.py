@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
+import numpy as np
 from data_loader import (
     load_intraday_prices, load_fuel_prices, load_renewable_forecast,
     load_weather, load_plant_portfolio, load_contract_obligations,
@@ -9,7 +10,7 @@ from data_loader import (
 )
 from dispatch import optimize_dispatch_for_date, summarize_dispatch
 from domain import compute_srmc_at_load
-import numpy as np
+from chart_theme import apply_dark_theme
 
 st.set_page_config(page_title="Plant Dispatch", page_icon="🏭", layout="wide")
 st.title("🏭 Plant Dispatch Optimizer")
@@ -47,7 +48,6 @@ if st.button("⚡ Optimize Dispatch", type="primary"):
     else:
         summary = summarize_dispatch(dispatch)
 
-        # ── Summary Metrics ──────────────────────────────────────────────
         st.header("Dispatch Summary")
         m1, m2, m3, m4 = st.columns(4)
         m1.metric("Total Generation", f"{summary['total_generation_mwh']:,.0f} MWh")
@@ -64,7 +64,6 @@ if st.button("⚡ Optimize Dispatch", type="primary"):
                 f"(fuel_prices.csv) | Avg CSS: €{summary['avg_css']:.2f}/MWh"
             )
 
-        # ── Stacked Area Chart ───────────────────────────────────────────
         st.header("Dispatch Schedule")
         pivot = dispatch.pivot_table(
             index="delivery_start", columns="plant_id",
@@ -74,7 +73,7 @@ if st.button("⚡ Optimize Dispatch", type="primary"):
         color_map = {
             "RHEIN_CCGT": "#636EFA",
             "ISAR_OCGT": "#EF553B",
-            "NORDSEE_WIND": "#00CC96",
+            "NORDSEE_WIND": "#00D4AA",
             "BAYERN_SOLAR": "#FFA15A",
         }
         fig = go.Figure()
@@ -91,7 +90,7 @@ if st.button("⚡ Optimize Dispatch", type="primary"):
         fig.add_trace(go.Scatter(
             x=price_data["delivery_start"], y=price_data["market_price"],
             name="Market Price (€/MWh)", yaxis="y2",
-            line=dict(color="black", width=1.5, dash="dot"),
+            line=dict(color="white", width=1.5, dash="dot"),
         ))
 
         fig.update_layout(
@@ -100,13 +99,90 @@ if st.button("⚡ Optimize Dispatch", type="primary"):
             yaxis2=dict(title="Price (€/MWh)", overlaying="y", side="right"),
             hovermode="x unified", height=500,
         )
+        apply_dark_theme(fig)
         st.plotly_chart(fig, use_container_width=True)
 
-        # ── Per-Plant Summary Table ──────────────────────────────────────
+        st.header("Profit Waterfall")
+        by_plant = summary["by_plant"].copy()
+        waterfall_plants = by_plant.index.tolist()
+        waterfall_margins = by_plant["total_margin"].tolist()
+        fig_wf = go.Figure(go.Waterfall(
+            x=waterfall_plants + ["Total"],
+            y=waterfall_margins + [sum(waterfall_margins)],
+            measure=["relative"] * len(waterfall_plants) + ["total"],
+            connector={"line": {"color": "#444"}},
+            increasing={"marker": {"color": "#00D4AA"}},
+            decreasing={"marker": {"color": "#FF4B4B"}},
+            totals={"marker": {"color": "#636EFA"}},
+            textposition="outside",
+            text=[f"€{v:,.0f}" for v in waterfall_margins] + [f"€{sum(waterfall_margins):,.0f}"],
+        ))
+        fig_wf.update_layout(
+            title="Margin Contribution by Plant (Waterfall)",
+            yaxis_title="Margin (€)", height=400,
+        )
+        apply_dark_theme(fig_wf)
+        st.plotly_chart(fig_wf, use_container_width=True)
+        st.caption("Source: dispatch optimization output — revenue minus SRMC cost per plant")
+
         st.header("Per-Plant Summary")
         st.dataframe(summary["by_plant"], use_container_width=True)
 
-        # ── Marginal Cost Curves ─────────────────────────────────────────
+        st.header("Merit-Order Stack (at today's fuel prices)")
+        day_fuel = fuel[fuel["date"].dt.date == pd.Timestamp(selected_date).date()]
+        if not day_fuel.empty:
+            gas_p_mo = day_fuel.iloc[0]["ttf_front_month_eur_mwh"]
+            co2_p_mo = day_fuel.iloc[0]["eu_ets_eur_tco2"]
+        else:
+            gas_p_mo = fuel.iloc[-1]["ttf_front_month_eur_mwh"]
+            co2_p_mo = fuel.iloc[-1]["eu_ets_eur_tco2"]
+
+        from domain import compute_srmc
+        stack = []
+        for _, p in plants.iterrows():
+            if p["technology"] in ("Wind", "Solar"):
+                stack.append({"plant": p["plant_id"], "capacity": p["capacity_mw"],
+                              "mc": 0, "color": color_map.get(p["plant_id"], "#999")})
+            else:
+                mc = compute_srmc(gas_p_mo, p["efficiency_pct"]/100, co2_p_mo, p["co2_intensity_tco2_mwh"], p["variable_om_eur_mwh"])
+                stack.append({"plant": p["plant_id"], "capacity": p["capacity_mw"],
+                              "mc": mc, "color": color_map.get(p["plant_id"], "#999")})
+        stack.sort(key=lambda x: x["mc"])
+
+        fig_stack = go.Figure()
+        cum_cap = 0
+        for s in stack:
+            fig_stack.add_trace(go.Scatter(
+                x=[cum_cap, cum_cap, cum_cap + s["capacity"], cum_cap + s["capacity"]],
+                y=[0, s["mc"], s["mc"], 0],
+                fill="toself", fillcolor=s["color"],
+                line=dict(color=s["color"], width=1),
+                name=f"{s['plant']} ({s['capacity']}MW, €{s['mc']:.0f}/MWh)",
+                mode="lines",
+                opacity=0.8,
+            ))
+            fig_stack.add_annotation(
+                x=cum_cap + s["capacity"]/2, y=s["mc"]/2 if s["mc"] > 10 else 5,
+                text=f"<b>{s['plant']}</b><br>€{s['mc']:.0f}/MWh",
+                showarrow=False, font=dict(color="white", size=10),
+            )
+            cum_cap += s["capacity"]
+
+        avg_price = dispatch["market_price"].mean()
+        fig_stack.add_hline(y=avg_price, line_dash="dash", line_color="white",
+                           annotation_text=f"Avg Market Price €{avg_price:.0f}/MWh",
+                           annotation_font_color="white")
+        fig_stack.update_layout(
+            title="Merit-Order Stack — Cheapest Generation First",
+            xaxis_title="Cumulative Capacity (MW)",
+            yaxis_title="Marginal Cost (€/MWh)",
+            height=400,
+            xaxis=dict(range=[0, cum_cap + 50]),
+        )
+        apply_dark_theme(fig_stack)
+        st.plotly_chart(fig_stack, use_container_width=True)
+        st.caption(f"Source: plant_portfolio.csv capacities + fuel_prices.csv (TTF €{gas_p_mo:.2f}, ETS €{co2_p_mo:.2f})")
+
         st.header("Marginal Cost Curves (at today's fuel prices)")
         if not day_fuel.empty:
             gas_p = day_fuel.iloc[0]["ttf_front_month_eur_mwh"]
@@ -130,10 +206,10 @@ if st.button("⚡ Optimize Dispatch", type="primary"):
             xaxis_title="Load (MW)", yaxis_title="Marginal Cost (€/MWh)",
             height=400,
         )
+        apply_dark_theme(fig_mc)
         st.plotly_chart(fig_mc, use_container_width=True)
         st.caption("Source: marginal_cost_curves.csv structure, recalculated with fuel_prices.csv inputs")
 
-        # ── Contract Overcommitment Check ────────────────────────────────
         ccgt_contracts = contracts[contracts["plant_id"] == "RHEIN_CCGT"]
         peak_mw = ccgt_contracts[
             ccgt_contracts["delivery_profile"].isin(["BASELOAD", "PEAK"])
@@ -144,7 +220,6 @@ if st.button("⚡ Optimize Dispatch", type="primary"):
                 f"vs plant capacity 430 MW. Optimizer capped dispatch and flagged shortfall."
             )
 
-        # ── Detailed Table ───────────────────────────────────────────────
         with st.expander("Detailed Dispatch Table (with source citations)"):
             st.dataframe(
                 dispatch[["delivery_start", "plant_id", "dispatch_mw",

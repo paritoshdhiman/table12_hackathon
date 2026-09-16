@@ -8,6 +8,7 @@ from data_loader import (
     load_intraday_prices, load_day_ahead_prices, load_fuel_prices,
     load_renewable_forecast,
 )
+from chart_theme import apply_dark_theme
 
 st.set_page_config(page_title="Market Analysis", page_icon="📈", layout="wide")
 st.title("📈 Market Analysis")
@@ -57,6 +58,7 @@ with tab1:
         yaxis_title="€/MWh", xaxis_title="",
         hovermode="x unified", height=500,
     )
+    apply_dark_theme(fig)
     st.plotly_chart(fig, use_container_width=True)
 
     m1, m2, m3, m4 = st.columns(4)
@@ -79,6 +81,7 @@ with tab2:
             color_discrete_sequence=["#636EFA"],
         )
         fig_hist.add_vline(x=0, line_dash="dash", line_color="red")
+        apply_dark_theme(fig_hist)
         st.plotly_chart(fig_hist, use_container_width=True)
 
     with col_r:
@@ -91,6 +94,7 @@ with tab2:
             color_continuous_scale="RdBu_r",
             color_continuous_midpoint=0,
         )
+        apply_dark_theme(fig_spread)
         st.plotly_chart(fig_spread, use_container_width=True)
 
     s1, s2, s3 = st.columns(3)
@@ -126,6 +130,7 @@ with tab3:
     fig_fuel.update_layout(title="TTF Gas & EU ETS Carbon Prices", height=450)
     fig_fuel.update_yaxes(title_text="Gas Price (€/MWh)", secondary_y=False)
     fig_fuel.update_yaxes(title_text="Carbon Price (€/tCO2)", secondary_y=True)
+    apply_dark_theme(fig_fuel)
     st.plotly_chart(fig_fuel, use_container_width=True)
     st.caption(f"Source: fuel_prices.csv ({len(fuel_f)} rows in range)")
 
@@ -171,6 +176,7 @@ with tab4:
             name="Forecast", line=dict(color="#FFA500", width=1.5),
         ))
         fig_re.update_layout(title="Solar Generation Forecast (MW)", height=450, yaxis_title="MW")
+    apply_dark_theme(fig_re)
     st.plotly_chart(fig_re, use_container_width=True)
 
     col_fe1, col_fe2 = st.columns(2)
@@ -182,6 +188,7 @@ with tab4:
             color_discrete_sequence=["#AB63FA"],
         )
         fig_err.add_vline(x=0, line_dash="dash", line_color="red")
+        apply_dark_theme(fig_err)
         st.plotly_chart(fig_err, use_container_width=True)
     with col_fe2:
         st.metric("Mean Forecast Error", f"{renew_f['forecast_error_mw'].mean():.1f} MW")
@@ -199,6 +206,7 @@ with tab5:
         labels={"hour": "Hour of Day (CET)", "vwap_eur_mwh": "VWAP (€/MWh)"},
         color_discrete_sequence=["#636EFA"],
     )
+    apply_dark_theme(fig_box)
     st.plotly_chart(fig_box, use_container_width=True)
 
     st.subheader("Price Heatmap: Hour × Day of Week")
@@ -215,5 +223,6 @@ with tab5:
         labels=dict(x="Hour", y="Day", color="€/MWh"),
         color_continuous_scale="YlOrRd",
     )
+    apply_dark_theme(fig_hm)
     st.plotly_chart(fig_hm, use_container_width=True)
     st.caption("Source: intraday_prices_epex.csv")

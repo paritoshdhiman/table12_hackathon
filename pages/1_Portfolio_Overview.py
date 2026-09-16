@@ -75,7 +75,8 @@ with col_left:
         title="Total P&L by Strategy (90 days)",
         color_discrete_sequence=px.colors.qualitative.Set2,
     )
-    fig.update_layout(showlegend=False)
+    fig.update_layout(showlegend=False, template="plotly_dark",
+                      paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)")
     st.plotly_chart(fig, use_container_width=True)
     st.caption("Source: trade_blotter.csv, grouped by strategy column")
 
@@ -88,6 +89,7 @@ with col_right:
         title="Trade Count by Strategy & Direction",
         color_discrete_map={"BUY": "#636EFA", "SELL": "#EF553B"},
     )
+    fig2.update_layout(template="plotly_dark", paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)")
     st.plotly_chart(fig2, use_container_width=True)
     st.caption("Source: trade_blotter.csv")
 
@@ -100,7 +102,8 @@ fig3 = px.line(
     title="Cumulative Portfolio P&L",
     labels={"timestamp_executed": "Date", "cumulative_pnl": "Cumulative P&L (€)"},
 )
-fig3.update_traces(line_color="#2ecc71")
+fig3.update_traces(line_color="#00D4AA", fill="tozeroy", fillcolor="rgba(0, 212, 170, 0.1)")
+fig3.update_layout(template="plotly_dark", paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)")
 st.plotly_chart(fig3, use_container_width=True)
 st.caption("Source: trade_blotter.csv, pnl_eur cumulative sum ordered by timestamp_executed")
 

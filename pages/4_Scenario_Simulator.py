@@ -1,12 +1,15 @@
 import streamlit as st
 import pandas as pd
+import numpy as np
 import plotly.graph_objects as go
+import plotly.express as px
 from plotly.subplots import make_subplots
 from data_loader import (
     load_intraday_prices, load_fuel_prices, load_renewable_forecast,
     load_weather, load_plant_portfolio, load_contract_obligations,
 )
 from dispatch import optimize_dispatch_for_date, summarize_dispatch
+from chart_theme import apply_dark_theme
 
 st.set_page_config(page_title="Scenario Simulator", page_icon="🔬", layout="wide")
 st.title("🔬 Scenario Simulator — What-If Analysis")
@@ -42,14 +45,7 @@ solar_factor = st.sidebar.slider("Solar Capacity Factor", 0.0, 1.5, 1.0, 0.05,
 demand_factor = st.sidebar.slider("Demand / Obligation Factor", 0.8, 1.2, 1.0, 0.05,
                                    help="Scales contract obligations")
 
-scenario_changed = (
-    gas_price != actual_gas or co2_price != actual_co2 or
-    wind_factor != 1.0 or solar_factor != 1.0 or demand_factor != 1.0
-)
-
 if st.button("🚀 Run Scenario Comparison", type="primary"):
-    col_base, col_scen = st.columns(2)
-
     with st.spinner("Running base case dispatch..."):
         base = optimize_dispatch_for_date(
             selected_date, intraday, fuel, renew, weather, plants, contracts,
@@ -72,7 +68,6 @@ if st.button("🚀 Run Scenario Comparison", type="primary"):
     if base.empty or scenario.empty:
         st.error("No data for selected date.")
     else:
-        # ── Delta Metrics ────────────────────────────────────────────
         st.header("Scenario Impact")
         d1, d2, d3, d4 = st.columns(4)
         delta_gen = scen_summary["total_generation_mwh"] - base_summary["total_generation_mwh"]
@@ -89,11 +84,10 @@ if st.button("🚀 Run Scenario Comparison", type="primary"):
         d4.metric("Margin", f"€{scen_summary['total_margin']:,.0f}",
                   delta=f"€{delta_margin:+,.0f}")
 
-        # ── Side-by-side dispatch charts ─────────────────────────────
         st.header("Dispatch Comparison")
         color_map = {
             "RHEIN_CCGT": "#636EFA", "ISAR_OCGT": "#EF553B",
-            "NORDSEE_WIND": "#00CC96", "BAYERN_SOLAR": "#FFA15A",
+            "NORDSEE_WIND": "#00D4AA", "BAYERN_SOLAR": "#FFA15A",
         }
         plant_order = ["BAYERN_SOLAR", "NORDSEE_WIND", "RHEIN_CCGT", "ISAR_OCGT"]
 
@@ -117,9 +111,9 @@ if st.button("🚀 Run Scenario Comparison", type="primary"):
                     ), row=1, col=col_idx)
 
         fig.update_layout(height=450, yaxis_title="Generation (MW)")
+        apply_dark_theme(fig)
         st.plotly_chart(fig, use_container_width=True)
 
-        # ── Per-plant comparison table ───────────────────────────────
         st.header("Per-Plant Comparison")
         comp = base_summary["by_plant"][["total_gen_mwh", "total_margin"]].copy()
         comp.columns = ["Base Gen (MWh)", "Base Margin (€)"]
@@ -129,7 +123,6 @@ if st.button("🚀 Run Scenario Comparison", type="primary"):
         comparison["Δ Margin (€)"] = comparison["Scenario Margin (€)"] - comparison["Base Margin (€)"]
         st.dataframe(comparison, use_container_width=True)
 
-        # ── Narrative ────────────────────────────────────────────────
         st.header("Analysis")
         changes = []
         if gas_price != actual_gas:
@@ -170,3 +163,35 @@ if st.button("🚀 Run Scenario Comparison", type="primary"):
             f"Scenario: gas=€{gas_price:.2f}, ets=€{co2_price:.2f}, "
             f"wind={wind_factor:.0%}, solar={solar_factor:.0%}, demand={demand_factor:.0%}"
         )
+
+        st.header("Sensitivity Heatmap: Gas × Carbon → Margin")
+        with st.spinner("Running sensitivity grid (5×5 = 25 scenarios)..."):
+            gas_range = np.linspace(max(15, actual_gas - 10), min(60, actual_gas + 10), 5)
+            co2_range = np.linspace(max(30, actual_co2 - 15), min(120, actual_co2 + 15), 5)
+            margin_grid = np.zeros((len(co2_range), len(gas_range)))
+
+            for i, co2_v in enumerate(co2_range):
+                for j, gas_v in enumerate(gas_range):
+                    r = optimize_dispatch_for_date(
+                        selected_date, intraday, fuel, renew, weather, plants, contracts,
+                        scenario_overrides={"gas_price": gas_v, "co2_price": co2_v,
+                                            "wind_factor": wind_factor, "solar_factor": solar_factor,
+                                            "demand_factor": demand_factor},
+                    )
+                    if not r.empty:
+                        margin_grid[i, j] = r["margin_eur"].sum()
+
+        fig_heat = px.imshow(
+            margin_grid, aspect="auto",
+            x=[f"€{g:.0f}" for g in gas_range],
+            y=[f"€{c:.0f}" for c in co2_range],
+            labels=dict(x="Gas Price (€/MWh)", y="Carbon Price (€/tCO2)", color="Margin (€)"),
+            title="Portfolio Margin Sensitivity to Gas & Carbon Prices",
+            color_continuous_scale="RdYlGn",
+            text_auto=".0f",
+        )
+        fig_heat.update_traces(textfont_size=11)
+        apply_dark_theme(fig_heat)
+        st.plotly_chart(fig_heat, use_container_width=True)
+        st.caption("Source: 25 dispatch optimizations across gas/carbon price grid | "
+                   f"Wind factor: {wind_factor:.0%}, Solar: {solar_factor:.0%}")
