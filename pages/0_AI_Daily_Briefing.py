@@ -9,22 +9,22 @@ from data_loader import (
 from domain import compute_srmc, clean_spark_spread, part_load_efficiency, temp_corrected_efficiency
 from compliance import check_remit_compliance
 
-st.set_page_config(page_title="AI Daily Briefing", page_icon="📋", layout="wide")
-st.title("AI Daily Briefing")
+st.set_page_config(page_title="DELTA Daily Briefing", page_icon="▲", layout="wide")
+st.title("▲ DELTA Daily Briefing")
 
 st.markdown("""
 <style>
     .insight-box {
-        background: #1a1f2e;
-        border: 1px solid #2a3040;
+        background: #1C1C1C;
+        border: 1px solid #2A2A2A;
         border-radius: 8px;
         padding: 16px;
         margin: 10px 0;
     }
-    .insight-box.warning { border-color: #FFB02E44; }
-    .insight-box.danger { border-color: #FF4B4B44; }
-    .insight-box strong { color: #e0e4ea; }
-    .insight-box em { color: #666e7a; font-size: 0.82rem; }
+    .insight-box.warning { border-color: #F59E0B44; }
+    .insight-box.danger { border-color: #DC262644; }
+    .insight-box strong { color: #F3F4F6; }
+    .insight-box em { color: #6B7280; font-size: 0.82rem; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -97,8 +97,8 @@ if st.button("🧠 Generate AI Briefing", type="primary", use_container_width=Tr
         fig.add_trace(go.Scatter(
             x=day_prices["delivery_start"], y=day_prices["vwap_eur_mwh"],
             name="Intraday VWAP", fill="tozeroy",
-            fillcolor="rgba(0, 212, 170, 0.1)",
-            line=dict(color="#00D4AA", width=2),
+            fillcolor="rgba(220, 38, 38, 0.1)",
+            line=dict(color="#DC2626", width=2),
         ))
         fig.add_trace(go.Scatter(
             x=day_prices["delivery_start"], y=day_prices["day_ahead_price_eur_mwh"],
@@ -106,11 +106,11 @@ if st.button("🧠 Generate AI Briefing", type="primary", use_container_width=Tr
         ))
 
         ccgt_srmc = compute_srmc(gas_p, 0.58, co2_p, 0.349, 2.7)
-        fig.add_hline(y=ccgt_srmc, line_dash="dash", line_color="#636EFA",
+        fig.add_hline(y=ccgt_srmc, line_dash="dash", line_color="#9CA3AF",
                       annotation_text=f"CCGT SRMC €{ccgt_srmc:.0f}")
 
         ocgt_srmc = compute_srmc(gas_p, 0.371, co2_p, 0.545, 4.2)
-        fig.add_hline(y=ocgt_srmc, line_dash="dash", line_color="#EF553B",
+        fig.add_hline(y=ocgt_srmc, line_dash="dash", line_color="#6B7280",
                       annotation_text=f"OCGT SRMC €{ocgt_srmc:.0f}")
 
         fig.update_layout(
