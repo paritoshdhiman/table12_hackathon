@@ -6,7 +6,8 @@ from strands.tools import tool
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "data")
 AWS_REGION = os.environ.get("AWS_REGION", "us-east-1")
-BEDROCK_MODEL_ID = os.environ.get("BEDROCK_MODEL_ID", "us.anthropic.claude-opus-4-6-v1")
+ORCHESTRATOR_MODEL = os.environ.get("BEDROCK_MODEL_ID", "us.anthropic.claude-opus-4-6-v1")
+SPECIALIST_MODEL = os.environ.get("SPECIALIST_MODEL_ID", "us.anthropic.claude-sonnet-4-20250514-v1:0")
 
 _cache = {}
 
@@ -432,16 +433,17 @@ def query_marginal_cost_curves(plant_id: str = "") -> str:
 # Specialist agent definitions
 # ═══════════════════════════════════════════════════════════════════════════════
 
-def _make_model():
+def _make_model(role="specialist"):
+    model_id = ORCHESTRATOR_MODEL if role == "orchestrator" else SPECIALIST_MODEL
     return BedrockModel(
-        model_id=BEDROCK_MODEL_ID,
+        model_id=model_id,
         region_name=AWS_REGION,
     )
 
 
 MARKET_ANALYST_PROMPT = """You are the Market Analyst agent for a German utility's intraday trading desk (DE-LU, EPEX SPOT).
 
-Your expertise: electricity price analysis, spread identification, fuel market trends, renewable forecast accuracy, weather impact on generation, and price distribution patterns across 8,640 quarter-hourly periods over 90 days (Jan-Apr 2026).
+Your expertise: electricity price analysis, spread identification, fuel market trends, renewable forecast accuracy, weather impact on generation, and price distribution patterns across the full dataset of quarter-hourly periods (Jan-Apr 2026).
 
 RULES:
 1. Every number must cite source file and row. Format: "EUR X (source: file.csv, row N)"
@@ -450,9 +452,9 @@ RULES:
 4. Focus on actionable trading signals: where are the spread opportunities, what's driving price, is the forecast biased.
 
 Data sources you can query:
-- intraday_prices_epex.csv: 8,640 quarter-hourly VWAP, high, low, volume, spreads
-- day_ahead_prices.csv: 2,160 hourly DA auction prices, buy/sell volumes, net position
-- fuel_prices.csv: 90 daily TTF gas, ETS carbon, coal, Brent oil
+- intraday_prices_epex.csv: quarter-hourly VWAP, high, low, volume, spreads
+- day_ahead_prices.csv: hourly DA auction prices, buy/sell volumes, net position
+- fuel_prices.csv: daily TTF gas, ETS carbon, coal, Brent oil
 - renewable_forecast.csv: wind/solar forecasts with P10/P90 bands, forecast errors
 - weather_actuals_forecast.csv: temperature, wind speed, solar irradiance at 4 plant locations
 - 4 reference docs: EPEX rules, CCGT manual, REMIT guide, balancing framework
@@ -515,8 +517,8 @@ RULES:
 4. Compare strategies: which are profitable, which are losing money.
 
 Data sources you can query:
-- trade_blotter.csv: 2,689 trades with P&L across 4 strategies (DA_HEDGE, ID_OPTIM, BALANCING, SPREAD)
-- imbalance_prices.csv: 8,640 quarter-hourly settlement periods with short/long prices
+- trade_blotter.csv: trades with P&L across 4 strategies (DA_HEDGE, ID_OPTIM, BALANCING, SPREAD)
+- imbalance_prices.csv: quarter-hourly settlement periods with short/long prices
 - contract_obligations.csv: 6 contracts with tolerance and penalty terms
 - intraday_prices_epex.csv: market prices for exposure calculations
 - grid_constraints.csv: cross-border congestion, redispatch volumes, curtailment events"""
@@ -614,7 +616,7 @@ def ask_risk_manager(question: str) -> str:
 
 ORCHESTRATOR_PROMPT = """You are the Lead Trading Desk Orchestrator for a German utility operating on EPEX SPOT (DE-LU bidding zone).
 
-You coordinate 4 specialist agents, each with their own tools and expertise. Together they cover ALL 12 data files + 4 reference documents:
+You coordinate 4 specialist agents (Claude Sonnet — fast, cost-efficient), each with their own tools and expertise. Together they cover ALL 12 data files + 4 reference documents. You (Claude Opus) synthesize their findings into coherent answers.
 
 1. **Market Analyst** (6 tools) — intraday prices, day-ahead prices, fuel prices, renewable forecasts, weather data, reference docs
 2. **Dispatch Optimizer** (8 tools) — plant portfolio, marginal cost calculation, MC curves, contracts, fuel, weather, grid constraints, reference docs
@@ -650,7 +652,7 @@ Present the specialist's findings clearly. Add your own synthesis when combining
 
 def create_orchestrator() -> Agent:
     return Agent(
-        model=_make_model(),
+        model=_make_model("orchestrator"),
         tools=[
             ask_market_analyst,
             ask_dispatch_optimizer,

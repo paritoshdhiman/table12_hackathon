@@ -87,9 +87,10 @@ st.markdown("")
 # ── Architecture ────────────────────────────────────────────────────────────
 st.markdown("### Multi-Agent Architecture")
 st.markdown(
-    "**5 Claude Opus 4.6 agents** on Amazon Bedrock via Strands Agents SDK, "
+    "**5 Claude agents** on Amazon Bedrock via Strands Agents SDK, "
     "deployed on **Amazon Bedrock AgentCore** — "
-    "1 orchestrator routes queries to 4 specialist agents, each with dedicated tools and domain expertise. "
+    "1 **Opus orchestrator** routes queries to 4 **Sonnet specialists**, each with dedicated tools and domain expertise. "
+    "Cost-optimized: Opus for reasoning and synthesis, Sonnet for fast data retrieval. "
     "Greedy merit-order dispatch optimizer with Willans-line part-load efficiency, "
     "temperature-corrected capacity derating, and start-up cost economics."
 )
@@ -97,11 +98,11 @@ st.markdown(
 arch_l, arch_r = st.columns(2)
 with arch_l:
     st.markdown("""
-**Specialist agents** (each a separate Claude instance)
-- **Market Analyst** — prices, spreads, fuel trends, renewable forecasts (4 tools)
-- **Dispatch Optimizer** — SRMC, merit-order, start-up costs, ramp constraints (5 tools)
+**Specialist agents** (Claude Sonnet — fast data retrieval)
+- **Market Analyst** — prices, spreads, fuel trends, renewable forecasts (6 tools)
+- **Dispatch Optimizer** — SRMC, merit-order, start-up costs, ramp constraints (8 tools)
 - **Compliance Officer** — REMIT reporting, contract tolerances, penalties (4 tools)
-- **Risk Manager** — P&L, imbalance exposure, strategy performance (4 tools)
+- **Risk Manager** — P&L, imbalance exposure, strategy performance (5 tools)
 """)
 with arch_r:
     st.markdown(f"""
@@ -135,9 +136,9 @@ with n3:
 """, unsafe_allow_html=True)
 
 st.caption(
-    "AI: 5 Claude Opus 4.6 agents via Amazon Bedrock (1 orchestrator + 4 specialists) · "
+    "AI: 1 Opus orchestrator + 4 Sonnet specialists via Amazon Bedrock · "
     "Deployment: Amazon Bedrock AgentCore · "
-    "Framework: Strands Agents SDK 1.56 · "
+    "Framework: Strands Agents SDK · "
     "Frontend: Streamlit + Plotly · "
     f"Data: 12 CSVs, 90 days EPEX SPOT DE-LU · "
     "Grounding: every number traces to source file and row"

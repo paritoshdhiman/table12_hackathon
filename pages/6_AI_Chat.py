@@ -1,4 +1,5 @@
 import streamlit as st
+from multi_agent import create_orchestrator
 from agentcore_client import invoke_trading_chat_agent
 
 st.set_page_config(page_title="DELTA AI Analyst", page_icon="▲", layout="wide")
@@ -13,64 +14,78 @@ from chart_theme import GLOBAL_CSS
 st.markdown(GLOBAL_CSS, unsafe_allow_html=True)
 
 st.title("▲ DELTA AI Analyst")
-st.caption("Multi-agent orchestrator on **Amazon Bedrock AgentCore** — routes queries to 4 specialist agents")
 
 # ── Sidebar ─────────────────────────────────────────────────────────────────
 with st.sidebar:
-    st.markdown("### AWS Credentials")
-    st.caption("Enter your AWS credentials to invoke agents on Bedrock AgentCore.")
+    st.markdown("### Execution Mode")
+    mode = st.radio(
+        "Agent backend",
+        ["Local (Bedrock API)", "AgentCore (deployed)"],
+        index=0,
+        help="Local mode runs the multi-agent orchestrator directly. AgentCore mode invokes deployed agents.",
+    )
+    _use_agentcore = mode == "AgentCore (deployed)"
 
-    aws_region = st.text_input(
-        "AWS Region",
-        value=st.session_state.get("aws_region", "us-east-1"),
-        key="aws_region_input",
-    )
-    aws_access_key = st.text_input(
-        "AWS Access Key ID",
-        value=st.session_state.get("aws_access_key", ""),
-        key="aws_access_key_input",
-    )
-    aws_secret_key = st.text_input(
-        "AWS Secret Access Key",
-        value=st.session_state.get("aws_secret_key", ""),
-        type="password",
-        key="aws_secret_key_input",
-    )
-    aws_session_token = st.text_input(
-        "AWS Session Token",
-        value=st.session_state.get("aws_session_token", ""),
-        type="password",
-        key="aws_session_token_input",
-    )
+    if _use_agentcore:
+        st.markdown("### AWS Credentials")
+        st.caption("Enter your AWS credentials to invoke agents on Bedrock AgentCore.")
 
-    if st.button("Save Credentials", use_container_width=True, type="primary"):
-        st.session_state.aws_region = aws_region
-        st.session_state.aws_access_key = aws_access_key
-        st.session_state.aws_secret_key = aws_secret_key
-        st.session_state.aws_session_token = aws_session_token
-        st.success("Credentials saved for this session.")
+        aws_region = st.text_input(
+            "AWS Region",
+            value=st.session_state.get("aws_region", "us-east-1"),
+            key="aws_region_input",
+        )
+        aws_access_key = st.text_input(
+            "AWS Access Key ID",
+            value=st.session_state.get("aws_access_key", ""),
+            key="aws_access_key_input",
+        )
+        aws_secret_key = st.text_input(
+            "AWS Secret Access Key",
+            value=st.session_state.get("aws_secret_key", ""),
+            type="password",
+            key="aws_secret_key_input",
+        )
+        aws_session_token = st.text_input(
+            "AWS Session Token",
+            value=st.session_state.get("aws_session_token", ""),
+            type="password",
+            key="aws_session_token_input",
+        )
 
-    _creds_ready = bool(
-        st.session_state.get("aws_access_key")
-        and st.session_state.get("aws_secret_key")
-    )
+        if st.button("Save Credentials", use_container_width=True, type="primary"):
+            st.session_state.aws_region = aws_region
+            st.session_state.aws_access_key = aws_access_key
+            st.session_state.aws_secret_key = aws_secret_key
+            st.session_state.aws_session_token = aws_session_token
+            st.success("Credentials saved for this session.")
 
-    if _creds_ready:
-        st.markdown('<span style="color:#22c55e; font-weight:600;">Connected</span>', unsafe_allow_html=True)
-    else:
-        st.markdown('<span style="color:#9CA3AF;">Not configured</span>', unsafe_allow_html=True)
+        _creds_ready = bool(
+            st.session_state.get("aws_access_key")
+            and st.session_state.get("aws_secret_key")
+        )
+
+        if _creds_ready:
+            st.markdown('<span style="color:#22c55e; font-weight:600;">Connected</span>', unsafe_allow_html=True)
+        else:
+            st.markdown('<span style="color:#9CA3AF;">Not configured</span>', unsafe_allow_html=True)
 
     st.markdown("---")
     st.markdown("### Multi-Agent System")
 
+    if _use_agentcore:
+        st.caption("Running on **Amazon Bedrock AgentCore**")
+    else:
+        st.caption("**Opus orchestrator** + **4 Sonnet specialists** via Bedrock API")
+
     st.markdown("""
     <div class="agent-route active">
-        <strong>Orchestrator</strong><br>
-        Routes queries to the right specialist
+        <strong>Orchestrator</strong> (Opus)<br>
+        Routes queries, synthesizes findings
     </div>
     """, unsafe_allow_html=True)
 
-    st.markdown("**Specialist Agents:**")
+    st.markdown("**Specialist Agents** (Sonnet):")
 
     st.markdown("""
     <div class="agent-route">
@@ -98,14 +113,13 @@ with st.sidebar:
     st.markdown("---")
     st.markdown("### How it works")
     st.markdown("""
-1. Your question goes to the **Orchestrator**
-2. It routes to the best **Specialist Agent**
+1. Your question goes to the **Orchestrator** (Opus)
+2. It routes to the best **Specialist** (Sonnet)
 3. The specialist calls its **data tools**
 4. Results flow back with **source citations**
+5. Orchestrator **synthesizes** multi-specialist answers
 
-Each agent is a separate Claude Opus 4.6
-instance on Amazon Bedrock AgentCore with
-its own system prompt and tool set.
+Cost-optimized: Opus for reasoning, Sonnet for data retrieval.
 """)
 
     st.markdown("---")
@@ -120,24 +134,25 @@ If data doesn't support a claim, the agent says so.
 """)
 
     if st.button("Reset Conversation", use_container_width=True):
+        st.session_state.pop("orchestrator", None)
         st.session_state.pop("messages", None)
         st.session_state.pop("agentcore_session_id", None)
         st.rerun()
 
-# ── Check credentials ───────────────────────────────────────────────────────
+# ── Initialize ──────────────────────────────────────────────────────────────
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-if not _creds_ready:
+if _use_agentcore and not _creds_ready:
     st.info(
         "**Enter your AWS credentials** in the sidebar to connect to AgentCore.\n\n"
-        "You need:\n"
-        "- **AWS Access Key ID**\n"
-        "- **AWS Secret Access Key**\n"
-        "- **AWS Session Token** (if using temporary credentials)\n\n"
-        "These are used only for this browser session and are never stored on disk."
+        "Or switch to **Local mode** to run the multi-agent system directly via Bedrock API."
     )
     st.stop()
+
+if not _use_agentcore and "orchestrator" not in st.session_state:
+    with st.spinner("Initializing multi-agent orchestrator (1 Opus + 4 Sonnet agents)..."):
+        st.session_state.orchestrator = create_orchestrator()
 
 # ── Example Questions ────────────────────────────────────────────────────────
 st.markdown("#### Example questions")
@@ -182,22 +197,36 @@ if prompt:
 
     with st.chat_message("assistant"):
         status = st.empty()
-        status.markdown("*Invoking AgentCore orchestrator...*")
 
-        try:
-            if "agentcore_session_id" not in st.session_state:
-                import uuid
-                st.session_state.agentcore_session_id = str(uuid.uuid4())
+        if _use_agentcore:
+            status.markdown("*Invoking AgentCore orchestrator...*")
+            try:
+                if "agentcore_session_id" not in st.session_state:
+                    import uuid
+                    st.session_state.agentcore_session_id = str(uuid.uuid4())
 
-            response_text = invoke_trading_chat_agent(
-                prompt,
-                session_id=st.session_state.agentcore_session_id,
-                aws_access_key_id=st.session_state.get("aws_access_key"),
-                aws_secret_access_key=st.session_state.get("aws_secret_key"),
-                aws_session_token=st.session_state.get("aws_session_token"),
-            )
-        except Exception as e:
-            response_text = f"Error: {str(e)}\n\nCheck your AWS credentials in the sidebar and try again."
+                response_text = invoke_trading_chat_agent(
+                    prompt,
+                    session_id=st.session_state.agentcore_session_id,
+                    aws_access_key_id=st.session_state.get("aws_access_key"),
+                    aws_secret_access_key=st.session_state.get("aws_secret_key"),
+                    aws_session_token=st.session_state.get("aws_session_token"),
+                )
+            except Exception as e:
+                response_text = f"Error: {str(e)}\n\nCheck your AWS credentials or switch to Local mode."
+        else:
+            status.markdown("*Orchestrator routing to specialist agent...*")
+            try:
+                result = st.session_state.orchestrator(prompt)
+                content_blocks = result.message.get("content", [])
+                response_text = ""
+                for block in content_blocks:
+                    if isinstance(block, dict) and "text" in block:
+                        response_text += block["text"]
+                if not response_text:
+                    response_text = str(result.message)
+            except Exception as e:
+                response_text = f"Error: {str(e)}\n\nTry rephrasing your question or resetting the conversation."
 
         status.empty()
         st.markdown(response_text)
