@@ -1,0 +1,5 @@
+__pycache__/
+*.pyc
+.streamlit/
+Files/
+one-pager.pdf

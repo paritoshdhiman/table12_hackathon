@@ -1,0 +1,5 @@
+plant_id,plant_name,technology,capacity_mw,min_stable_load_mw,max_ramp_up_mw_min,max_ramp_down_mw_min,heat_rate_btu_kwh,efficiency_pct,start_cost_hot_eur,start_cost_warm_eur,start_cost_cold_eur,start_time_hot_min,start_time_warm_min,start_time_cold_min,min_run_time_hrs,min_down_time_hrs,co2_intensity_tco2_mwh,variable_om_eur_mwh,location_bidding_zone
+RHEIN_CCGT,Rheinhafen CCGT,CCGT,430,170,20,20,5880,58.0,45000,85000,145000,30,90,240,4,4,0.349,2.7,DE-LU
+ISAR_OCGT,Isar Peaker OCGT,OCGT,180,90,30,30,9200,37.1,15000,28000,42000,15,45,90,1,1,0.545,4.2,DE-LU
+NORDSEE_WIND,Nordsee Offshore Wind Farm,Wind,350,0,350,350,0,100.0,0,0,0,0,0,0,0,0,0.0,0.0,DE-LU
+BAYERN_SOLAR,Bayern Solar Park,Solar,120,0,120,120,0,100.0,0,0,0,0,0,0,0,0,0.0,0.0,DE-LU
