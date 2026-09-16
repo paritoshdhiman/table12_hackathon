@@ -3,14 +3,16 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "MarketAnalystAgent"
+name = "TradingChatAgent"
 version = "0.1.0"
-description = "Market Analyst Agent (Anthropic SDK) — deployed on Amazon Bedrock AgentCore"
+description = "Intraday Energy Trading Chat Agent — deployed on Amazon Bedrock AgentCore"
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
+    "aws-opentelemetry-distro ~= 0.18.0",
     "bedrock-agentcore >= 1.9.1",
-    "anthropic[bedrock] >= 0.49.0",
+    "botocore[crt] >= 1.35.0",
+    "strands-agents >= 1.15.0",
     "pandas >= 2.2",
     "boto3 >= 1.34",
 ]

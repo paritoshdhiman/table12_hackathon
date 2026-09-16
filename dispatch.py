@@ -95,8 +95,10 @@ def optimize_dispatch_for_date(
             wind_mw = renew_row.iloc[0]["wind_forecast_mw"] * wind_factor
             solar_mw = renew_row.iloc[0]["solar_forecast_mw"] * solar_factor
 
-        wind_mw = min(wind_mw, 350.0)
-        solar_mw = min(solar_mw, 120.0)
+        wind_cap = plants[plants["plant_id"] == "NORDSEE_WIND"]["capacity_mw"].iloc[0]
+        solar_cap = plants[plants["plant_id"] == "BAYERN_SOLAR"]["capacity_mw"].iloc[0]
+        wind_mw = min(wind_mw, wind_cap)
+        solar_mw = min(solar_mw, solar_cap)
 
         ccgt_obligation = _get_contract_obligation(contracts, "RHEIN_CCGT", ds, date_str) * demand_factor
         ocgt_obligation = _get_contract_obligation(contracts, "ISAR_OCGT", ds, date_str) * demand_factor
@@ -167,7 +169,7 @@ def optimize_dispatch_for_date(
         wind_revenue = wind_mw * 0.25 * market_price
         solar_revenue = solar_mw * 0.25 * market_price
 
-        css = clean_spark_spread(market_price, gas_price, 0.58, co2_price, ccgt["co2_intensity_tco2_mwh"])
+        css = clean_spark_spread(market_price, gas_price, ccgt["efficiency_pct"] / 100, co2_price, ccgt["co2_intensity_tco2_mwh"])
 
         citation = (
             f"fuel_prices.csv (ttf={gas_price:.2f}, ets={co2_price:.2f}), "

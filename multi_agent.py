@@ -5,6 +5,8 @@ from strands.models.bedrock import BedrockModel
 from strands.tools import tool
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "data")
+AWS_REGION = os.environ.get("AWS_REGION", "us-east-1")
+BEDROCK_MODEL_ID = os.environ.get("BEDROCK_MODEL_ID", "us.anthropic.claude-opus-4-6-v1")
 
 _cache = {}
 
@@ -185,7 +187,8 @@ def compute_marginal_cost(plant_id: str, load_mw: float,
             co2_price = last["eu_ets_eur_tco2"]
     eta_max = p["efficiency_pct"] / 100
     p_max = p["capacity_mw"]
-    eta = eta_max * (1 - 0.15 * (1 - load_mw / p_max) ** 2)
+    from domain import part_load_efficiency
+    eta = part_load_efficiency(eta_max, load_mw, p_max)
     co2_i = p["co2_intensity_tco2_mwh"]
     vom = p["variable_om_eur_mwh"]
     srmc = gas_price / eta + co2_price * co2_i + vom
@@ -360,8 +363,12 @@ def query_weather(date: str, location: str = "") -> str:
         lines.append(f"    Data type: {is_forecast_pct:.0f}% forecast, {100-is_forecast_pct:.0f}% actual")
         if loc == "Karlsruhe_CCGT":
             avg_temp = loc_data['temperature_c'].mean()
-            if avg_temp > 15:
-                eff_penalty = 0.5 * (avg_temp - 15)
+            from domain import temp_corrected_efficiency
+            ccgt = _plants()[_plants()["plant_id"] == "RHEIN_CCGT"].iloc[0]
+            eta_rated = ccgt["efficiency_pct"] / 100
+            eta_corrected = temp_corrected_efficiency(eta_rated, avg_temp)
+            if eta_corrected < eta_rated:
+                eff_penalty = (1 - eta_corrected / eta_rated) * 100
                 lines.append(f"    CCGT impact: {avg_temp:.1f}°C → efficiency derated by {eff_penalty:.1f}% from ISO 15°C")
     return "\n".join(lines)
 
@@ -427,8 +434,8 @@ def query_marginal_cost_curves(plant_id: str = "") -> str:
 
 def _make_model():
     return BedrockModel(
-        model_id="us.anthropic.claude-opus-4-6-v1",
-        region_name="us-east-1",
+        model_id=BEDROCK_MODEL_ID,
+        region_name=AWS_REGION,
     )
 
 

@@ -5,6 +5,8 @@ from strands.models.bedrock import BedrockModel
 from strands.tools import tool
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "data")
+AWS_REGION = os.environ.get("AWS_REGION", "us-east-1")
+BEDROCK_MODEL_ID = os.environ.get("BEDROCK_MODEL_ID", "us.anthropic.claude-opus-4-6-v1")
 
 _cache = {}
 
@@ -287,10 +289,11 @@ def query_contract_obligations() -> str:
         (df["plant_id"] == "RHEIN_CCGT") &
         (df["delivery_profile"].isin(["BASELOAD", "PEAK"]))
     ]["volume_mw"].sum()
-    if ccgt_peak > 430:
+    ccgt_cap = _plants()[_plants()["plant_id"] == "RHEIN_CCGT"]["capacity_mw"].iloc[0]
+    if ccgt_peak > ccgt_cap:
         lines.append(
             f"\n  WARNING: CCGT peak-hour commitments total {ccgt_peak} MW "
-            f"but RHEIN_CCGT capacity is only 430 MW!"
+            f"but RHEIN_CCGT capacity is only {ccgt_cap:.0f} MW!"
         )
     return "\n".join(lines)
 
@@ -398,8 +401,8 @@ Reference docs: EPEX SPOT rules, CCGT manual, REMIT guide, balancing framework."
 
 def create_chat_agent() -> Agent:
     model = BedrockModel(
-        model_id="us.anthropic.claude-opus-4-6-v1",
-        region_name="us-east-1",
+        model_id=BEDROCK_MODEL_ID,
+        region_name=AWS_REGION,
     )
     return Agent(
         model=model,
