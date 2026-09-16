@@ -9,32 +9,8 @@ try:
 except Exception:
     pass
 
-st.markdown("""
-<style>
-    .agent-route {
-        background: #1C1C1C;
-        border: 1px solid #2A2A2A;
-        border-radius: 8px;
-        padding: 10px 14px;
-        margin: 4px 0;
-        font-size: 0.85rem;
-        color: #9CA3AF;
-    }
-    .agent-route.active { border-color: #DC262644; color: #FAFAFA; }
-    .specialist-tag {
-        display: inline-block;
-        padding: 2px 8px;
-        border-radius: 4px;
-        font-size: 0.72rem;
-        font-weight: 600;
-        margin-right: 4px;
-    }
-    .tag-market { background: #DC262622; color: #DC2626; }
-    .tag-dispatch { background: #9CA3AF22; color: #9CA3AF; }
-    .tag-compliance { background: #F59E0B22; color: #F59E0B; }
-    .tag-risk { background: #EF444422; color: #EF4444; }
-</style>
-""", unsafe_allow_html=True)
+from chart_theme import GLOBAL_CSS
+st.markdown(GLOBAL_CSS, unsafe_allow_html=True)
 
 st.title("▲ DELTA AI Analyst")
 st.caption("Multi-agent orchestrator on **Amazon Bedrock AgentCore** — routes queries to 4 specialist agents")

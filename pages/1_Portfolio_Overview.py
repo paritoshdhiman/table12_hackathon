@@ -20,6 +20,20 @@ contracts = load_contract_obligations()
 remit = load_remit_transactions()
 intraday = load_intraday_prices()
 
+# ── Filters ──────────────────────────────────────────────────────────────────
+with st.sidebar:
+    st.markdown("### Filters")
+    all_strategies = ["All"] + sorted(trades["strategy"].unique().tolist())
+    sel_strategy = st.selectbox("Strategy", all_strategies)
+    all_plants = ["All"] + sorted(trades["plant_id"].unique().tolist())
+    sel_plant = st.selectbox("Plant", all_plants)
+
+filtered_trades = trades.copy()
+if sel_strategy != "All":
+    filtered_trades = filtered_trades[filtered_trades["strategy"] == sel_strategy]
+if sel_plant != "All":
+    filtered_trades = filtered_trades[filtered_trades["plant_id"] == sel_plant]
+
 # ── Plant Fleet ──────────────────────────────────────────────────────────────
 st.header("Plant Fleet")
 cols = st.columns(4)
@@ -36,10 +50,15 @@ for i, (_, p) in enumerate(plants.iterrows()):
 st.caption("Source: data/plant_portfolio/plant_portfolio.csv")
 
 # ── Key Performance Indicators ───────────────────────────────────────────────
-st.header("90-Day Key Metrics")
-total_pnl = trades["pnl_eur"].sum()
-total_trades = len(trades)
-total_volume_mwh = (trades["volume_mw"] * 0.25).sum()
+filter_label = ""
+if sel_strategy != "All":
+    filter_label += f" | Strategy: {sel_strategy}"
+if sel_plant != "All":
+    filter_label += f" | Plant: {sel_plant}"
+st.header(f"Key Metrics ({len(filtered_trades)} trades{filter_label})")
+total_pnl = filtered_trades["pnl_eur"].sum()
+total_trades = len(filtered_trades)
+total_volume_mwh = (filtered_trades["volume_mw"] * 0.25).sum()
 
 avg_gas = fuel["ttf_front_month_eur_mwh"].mean()
 avg_co2 = fuel["eu_ets_eur_tco2"].mean()
@@ -72,7 +91,7 @@ st.header("P&L by Trading Strategy")
 col_left, col_right = st.columns(2)
 
 with col_left:
-    pnl_by_strategy = trades.groupby("strategy")["pnl_eur"].sum().reset_index()
+    pnl_by_strategy = filtered_trades.groupby("strategy")["pnl_eur"].sum().reset_index()
     pnl_by_strategy.columns = ["Strategy", "P&L (€)"]
     fig = px.bar(
         pnl_by_strategy, x="Strategy", y="P&L (€)",
@@ -86,7 +105,7 @@ with col_left:
     st.caption("Source: trade_blotter.csv, grouped by strategy column")
 
 with col_right:
-    trades_by_dir = trades.groupby(["strategy", "direction"])["pnl_eur"].agg(["sum", "count"]).reset_index()
+    trades_by_dir = filtered_trades.groupby(["strategy", "direction"])["pnl_eur"].agg(["sum", "count"]).reset_index()
     trades_by_dir.columns = ["Strategy", "Direction", "P&L (€)", "Count"]
     fig2 = px.bar(
         trades_by_dir, x="Strategy", y="Count", color="Direction",
@@ -100,7 +119,7 @@ with col_right:
 
 # ── P&L Over Time ────────────────────────────────────────────────────────────
 st.header("Cumulative P&L Over Time")
-trades_sorted = trades.sort_values("timestamp_executed").copy()
+trades_sorted = filtered_trades.sort_values("timestamp_executed").copy()
 trades_sorted["cumulative_pnl"] = trades_sorted["pnl_eur"].cumsum()
 fig3 = px.line(
     trades_sorted, x="timestamp_executed", y="cumulative_pnl",

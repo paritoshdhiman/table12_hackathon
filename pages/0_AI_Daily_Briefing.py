@@ -14,21 +14,8 @@ st.set_page_config(page_title="DELTA Daily Briefing", page_icon="▲", layout="w
 apply_sidebar_branding()
 st.title("▲ DELTA Daily Briefing")
 
-st.markdown("""
-<style>
-    .insight-box {
-        background: #1C1C1C;
-        border: 1px solid #2A2A2A;
-        border-radius: 8px;
-        padding: 16px;
-        margin: 10px 0;
-    }
-    .insight-box.warning { border-color: #F59E0B44; }
-    .insight-box.danger { border-color: #DC262644; }
-    .insight-box strong { color: #F3F4F6; }
-    .insight-box em { color: #6B7280; font-size: 0.82rem; }
-</style>
-""", unsafe_allow_html=True)
+from chart_theme import GLOBAL_CSS
+st.markdown(GLOBAL_CSS, unsafe_allow_html=True)
 
 # ── Load Data ────────────────────────────────────────────────────────────────
 intraday = load_intraday_prices()

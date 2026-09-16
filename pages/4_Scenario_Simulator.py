@@ -168,21 +168,26 @@ if st.button("🚀 Run Scenario Comparison", type="primary"):
         )
 
         st.header("Sensitivity Heatmap: Gas × Carbon → Margin")
-        with st.spinner("Running sensitivity grid (5×5 = 25 scenarios)..."):
-            gas_range = np.linspace(max(15, actual_gas - 10), min(60, actual_gas + 10), 5)
-            co2_range = np.linspace(max(30, actual_co2 - 15), min(120, actual_co2 + 15), 5)
-            margin_grid = np.zeros((len(co2_range), len(gas_range)))
+        gas_range = np.linspace(max(15, actual_gas - 10), min(60, actual_gas + 10), 5)
+        co2_range = np.linspace(max(30, actual_co2 - 15), min(120, actual_co2 + 15), 5)
+        margin_grid = np.zeros((len(co2_range), len(gas_range)))
 
-            for i, co2_v in enumerate(co2_range):
-                for j, gas_v in enumerate(gas_range):
-                    r = optimize_dispatch_for_date(
-                        selected_date, intraday, fuel, renew, weather, plants, contracts,
-                        scenario_overrides={"gas_price": gas_v, "co2_price": co2_v,
-                                            "wind_factor": wind_factor, "solar_factor": solar_factor,
-                                            "demand_factor": demand_factor},
-                    )
-                    if not r.empty:
-                        margin_grid[i, j] = r["margin_eur"].sum()
+        progress = st.progress(0, text="Running sensitivity grid (0/25)...")
+        total = len(co2_range) * len(gas_range)
+        done = 0
+        for i, co2_v in enumerate(co2_range):
+            for j, gas_v in enumerate(gas_range):
+                r = optimize_dispatch_for_date(
+                    selected_date, intraday, fuel, renew, weather, plants, contracts,
+                    scenario_overrides={"gas_price": gas_v, "co2_price": co2_v,
+                                        "wind_factor": wind_factor, "solar_factor": solar_factor,
+                                        "demand_factor": demand_factor},
+                )
+                if not r.empty:
+                    margin_grid[i, j] = r["margin_eur"].sum()
+                done += 1
+                progress.progress(done / total, text=f"Running sensitivity grid ({done}/{total})...")
+        progress.empty()
 
         fig_heat = px.imshow(
             margin_grid, aspect="auto",

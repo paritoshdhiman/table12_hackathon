@@ -23,6 +23,18 @@ renewable_forecast = load_renewable_forecast()
 fuel_prices = load_fuel_prices()
 plants = load_plant_portfolio()
 
+all_dates = sorted(trades["delivery_date"].unique())
+with st.sidebar:
+    st.markdown("### Date Range")
+    date_start = st.date_input("From", value=all_dates[0], min_value=all_dates[0], max_value=all_dates[-1], key="risk_start")
+    date_end = st.date_input("To", value=all_dates[-1], min_value=all_dates[0], max_value=all_dates[-1], key="risk_end")
+
+filtered_trades = trades[(trades["delivery_date"] >= date_start) & (trades["delivery_date"] <= date_end)]
+filtered_imbalance = imbalance[
+    (imbalance["timestamp_utc"].dt.date >= date_start) &
+    (imbalance["timestamp_utc"].dt.date <= date_end)
+]
+
 tab1, tab2, tab3, tab4 = st.tabs(["REMIT Compliance", "Contract Obligations", "Imbalance Exposure", "Value-at-Risk"])
 
 with tab1:
@@ -154,7 +166,7 @@ with tab2:
 
 with tab3:
     st.header("Imbalance Settlement Analysis")
-    imb = analyze_imbalance_exposure(imbalance)
+    imb = analyze_imbalance_exposure(filtered_imbalance if not filtered_imbalance.empty else imbalance)
 
     m1, m2, m3 = st.columns(3)
     m1.metric("Avg Long Price", f"€{imb['avg_long_price']:.2f}/MWh")
@@ -213,8 +225,7 @@ with tab3:
 with tab4:
     st.header("Portfolio Value-at-Risk (Historical Simulation)")
 
-    intraday = load_intraday_prices()
-    daily_pnl = trades.groupby("delivery_date")["pnl_eur"].sum().sort_index()
+    daily_pnl = filtered_trades.groupby("delivery_date")["pnl_eur"].sum().sort_index()
 
     m1, m2, m3, m4 = st.columns(4)
     var_95 = np.percentile(daily_pnl, 5)
