@@ -11,7 +11,7 @@ from data_loader import (
 from dispatch import optimize_dispatch_for_date, summarize_dispatch
 from chart_theme import apply_dark_theme
 
-st.set_page_config(page_title="Scenario Simulator", page_icon="🔬", layout="wide")
+st.set_page_config(page_title="DELTA Scenarios", page_icon="▲", layout="wide")
 st.title("Scenario Simulator")
 
 intraday = load_intraday_prices()

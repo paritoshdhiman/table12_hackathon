@@ -40,6 +40,18 @@ def _renewable():
 def _imbalance():
     return _load("imbalance_prices.csv", "market_prices", parse_dates=["timestamp_utc"])
 
+def _day_ahead():
+    return _load("day_ahead_prices.csv", "market_prices", parse_dates=["delivery_date"])
+
+def _weather():
+    return _load("weather_actuals_forecast.csv", "market_prices", parse_dates=["timestamp_utc"])
+
+def _grid():
+    return _load("grid_constraints.csv", "grid_constraints", parse_dates=["timestamp_utc"])
+
+def _mc_curves():
+    return _load("marginal_cost_curves.csv", "plant_portfolio")
+
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # Tool definitions (shared across specialist agents)
@@ -294,6 +306,120 @@ def search_reference_docs(query: str) -> str:
     return f"Found {len(results)} passage(s):\n" + "\n\n".join(results) if results else f"No matches for '{query}'."
 
 
+@tool
+def query_day_ahead_prices(date: str, hour: int = -1) -> str:
+    """Query day-ahead auction prices by date (YYYY-MM-DD), optionally by hour (0-23). Returns hourly clearing prices, buy/sell volumes, net position. Source: day_ahead_prices.csv"""
+    df = _day_ahead()
+    day = df[df["delivery_date"].dt.date == pd.Timestamp(date).date()]
+    if hour >= 0:
+        day = day[day["delivery_hour"] == hour]
+    if day.empty:
+        return f"No day-ahead data for {date} (hour={hour})"
+    lines = [f"Day-ahead prices for {date} — {len(day)} hours (day_ahead_prices.csv)"]
+    lines.append(f"  Mean price: EUR {day['price_eur_mwh'].mean():.2f}/MWh")
+    lines.append(f"  Min: EUR {day['price_eur_mwh'].min():.2f} (hour {day.loc[day['price_eur_mwh'].idxmin(), 'delivery_hour']})")
+    lines.append(f"  Max: EUR {day['price_eur_mwh'].max():.2f} (hour {day.loc[day['price_eur_mwh'].idxmax(), 'delivery_hour']})")
+    lines.append(f"  Total buy volume: {day['volume_buy_mwh'].sum():,.0f} MWh")
+    lines.append(f"  Total sell volume: {day['volume_sell_mwh'].sum():,.0f} MWh")
+    lines.append(f"  Net position (buy-sell): {day['net_position_mwh'].sum():,.0f} MWh")
+    if len(day) <= 24:
+        lines.append("  Hourly breakdown:")
+        for idx, row in day.iterrows():
+            lines.append(
+                f"    Row {idx+2}: Hour {int(row['delivery_hour']):02d} — EUR {row['price_eur_mwh']:.2f}/MWh | "
+                f"Buy: {row['volume_buy_mwh']:,.0f} | Sell: {row['volume_sell_mwh']:,.0f} | Net: {row['net_position_mwh']:,.0f}"
+            )
+    return "\n".join(lines)
+
+
+@tool
+def query_weather(date: str, location: str = "") -> str:
+    """Query weather actuals and forecasts by date (YYYY-MM-DD), optionally by location (Karlsruhe_CCGT, Landshut_OCGT, Nordsee_Wind, Bayern_Solar). Returns temperature, wind speed, solar irradiance, humidity, cloud cover. Source: weather_actuals_forecast.csv"""
+    df = _weather()
+    day = df[df["timestamp_utc"].dt.date == pd.Timestamp(date).date()]
+    if location:
+        day = day[day["location"] == location]
+    if day.empty:
+        return f"No weather data for {date}" + (f" at {location}" if location else "")
+    locations = day["location"].unique()
+    lines = [f"Weather data for {date} — {len(day)} records (weather_actuals_forecast.csv)"]
+    for loc in locations:
+        loc_data = day[day["location"] == loc]
+        lines.append(f"\n  {loc} ({len(loc_data)} periods):")
+        lines.append(f"    Temperature: avg {loc_data['temperature_c'].mean():.1f}°C "
+                     f"(min {loc_data['temperature_c'].min():.1f}, max {loc_data['temperature_c'].max():.1f})")
+        lines.append(f"    Wind speed: avg {loc_data['wind_speed_ms'].mean():.1f} m/s "
+                     f"(max {loc_data['wind_speed_ms'].max():.1f})")
+        lines.append(f"    Solar irradiance: avg {loc_data['solar_irradiance_wm2'].mean():.0f} W/m² "
+                     f"(max {loc_data['solar_irradiance_wm2'].max():.0f})")
+        lines.append(f"    Cloud cover: avg {loc_data['cloud_cover_pct'].mean():.0f}%")
+        lines.append(f"    Humidity: avg {loc_data['humidity_pct'].mean():.0f}%")
+        lines.append(f"    Pressure: avg {loc_data['pressure_hpa'].mean():.1f} hPa")
+        is_forecast_pct = loc_data['is_forecast'].mean() * 100
+        lines.append(f"    Data type: {is_forecast_pct:.0f}% forecast, {100-is_forecast_pct:.0f}% actual")
+        if loc == "Karlsruhe_CCGT":
+            avg_temp = loc_data['temperature_c'].mean()
+            if avg_temp > 15:
+                eff_penalty = 0.5 * (avg_temp - 15)
+                lines.append(f"    CCGT impact: {avg_temp:.1f}°C → efficiency derated by {eff_penalty:.1f}% from ISO 15°C")
+    return "\n".join(lines)
+
+
+@tool
+def query_grid_constraints(date: str, from_zone: str = "", to_zone: str = "") -> str:
+    """Query cross-border grid constraints (ATC, NTC, scheduled flows, congestion, redispatch, curtailment). Filter by date and optionally by from_zone or to_zone (DE-LU, AT, FR, NL). Source: grid_constraints.csv"""
+    df = _grid()
+    day = df[df["timestamp_utc"].dt.date == pd.Timestamp(date).date()]
+    if from_zone:
+        day = day[day["from_zone"] == from_zone]
+    if to_zone:
+        day = day[day["to_zone"] == to_zone]
+    if day.empty:
+        return f"No grid constraint data for {date}"
+    borders = day.groupby(["from_zone", "to_zone"]).agg({
+        "atc_mw": "mean",
+        "ntc_mw": "mean",
+        "scheduled_flow_mw": "mean",
+        "congestion_rent_eur_mwh": "mean",
+        "redispatch_volume_mw": "sum",
+        "curtailment_mw": "sum",
+    }).reset_index()
+    lines = [f"Grid constraints for {date} — {len(day)} records (grid_constraints.csv)"]
+    for idx, b in borders.iterrows():
+        lines.append(
+            f"  {b['from_zone']} → {b['to_zone']}:"
+            f" ATC={b['atc_mw']:.0f}MW, NTC={b['ntc_mw']:.0f}MW,"
+            f" Scheduled flow={b['scheduled_flow_mw']:.0f}MW,"
+            f" Congestion={b['congestion_rent_eur_mwh']:.2f} EUR/MWh,"
+            f" Redispatch={b['redispatch_volume_mw']:.0f}MW,"
+            f" Curtailment={b['curtailment_mw']:.0f}MW"
+        )
+    total_curtail = day["curtailment_mw"].sum()
+    total_redispatch = day["redispatch_volume_mw"].sum()
+    if total_curtail > 0:
+        lines.append(f"\n  Total curtailment: {total_curtail:.0f} MW")
+    if total_redispatch > 0:
+        lines.append(f"  Total redispatch: {total_redispatch:.0f} MW")
+    return "\n".join(lines)
+
+
+@tool
+def query_marginal_cost_curves(plant_id: str = "") -> str:
+    """Query pre-calculated marginal cost curves showing cost at different load levels. Source: marginal_cost_curves.csv"""
+    df = _mc_curves()
+    if plant_id:
+        df = df[df["plant_id"] == plant_id]
+    if df.empty:
+        return f"No marginal cost curves for '{plant_id}'"
+    lines = [f"Marginal cost curves ({len(df)} data points, marginal_cost_curves.csv):"]
+    for pid in df["plant_id"].unique():
+        plant_data = df[df["plant_id"] == pid].sort_values("load_mw")
+        lines.append(f"\n  {pid}:")
+        for idx, row in plant_data.iterrows():
+            lines.append(f"    Row {idx+2}: Load {row['load_mw']:.0f}MW → MC EUR {row['marginal_cost_eur_mwh']:.2f}/MWh")
+    return "\n".join(lines)
+
+
 # ═══════════════════════════════════════════════════════════════════════════════
 # Specialist agent definitions
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -307,13 +433,21 @@ def _make_model():
 
 MARKET_ANALYST_PROMPT = """You are the Market Analyst agent for a German utility's intraday trading desk (DE-LU, EPEX SPOT).
 
-Your expertise: electricity price analysis, spread identification, fuel market trends, renewable forecast accuracy, and price distribution patterns across 8,640 quarter-hourly periods over 90 days (Jan-Apr 2026).
+Your expertise: electricity price analysis, spread identification, fuel market trends, renewable forecast accuracy, weather impact on generation, and price distribution patterns across 8,640 quarter-hourly periods over 90 days (Jan-Apr 2026).
 
 RULES:
 1. Every number must cite source file and row. Format: "EUR X (source: file.csv, row N)"
 2. Use your tools to look up data — never guess.
 3. Show formulas when computing spreads or derived metrics.
 4. Focus on actionable trading signals: where are the spread opportunities, what's driving price, is the forecast biased.
+
+Data sources you can query:
+- intraday_prices_epex.csv: 8,640 quarter-hourly VWAP, high, low, volume, spreads
+- day_ahead_prices.csv: 2,160 hourly DA auction prices, buy/sell volumes, net position
+- fuel_prices.csv: 90 daily TTF gas, ETS carbon, coal, Brent oil
+- renewable_forecast.csv: wind/solar forecasts with P10/P90 bands, forecast errors
+- weather_actuals_forecast.csv: temperature, wind speed, solar irradiance at 4 plant locations
+- 4 reference docs: EPEX rules, CCGT manual, REMIT guide, balancing framework
 
 Key formulas:
 - Clean Spark Spread = Power_Price - Gas/Efficiency - CO2*CO2_Intensity
@@ -324,13 +458,23 @@ DISPATCH_OPTIMIZER_PROMPT = """You are the Dispatch Optimizer agent for a 4-plan
 
 Plants: RHEIN_CCGT (430MW), NORDSEE_WIND (350MW), BAYERN_SOLAR (120MW), ISAR_OCGT (180MW peaker).
 
-Your expertise: merit-order dispatch, marginal cost calculation, part-load efficiency (Willans line), start-up economics (hot/warm/cold), ramp constraints, temperature derating, and contract obligation fulfillment.
+Your expertise: merit-order dispatch, marginal cost calculation, part-load efficiency (Willans line), start-up economics (hot/warm/cold), ramp constraints, temperature derating, grid constraints, and contract obligation fulfillment.
 
 RULES:
 1. Every number must cite source file and row.
 2. Use tools to get actual plant parameters and fuel prices — never assume.
 3. Show the SRMC formula and all inputs when computing costs.
 4. Flag the CCGT overcommitment: contracts total 450MW peak but capacity is 430MW.
+5. Check weather for temperature derating and grid constraints for curtailment/redispatch.
+
+Data sources you can query:
+- plant_portfolio.csv: 4 plants with capacity, efficiency, ramp rates, start costs, CO2 intensity
+- marginal_cost_curves.csv: pre-calculated MC at different load levels
+- contract_obligations.csv: 6 PPAs/bilateral contracts with tolerances and penalties
+- fuel_prices.csv: daily TTF gas and EU ETS carbon prices
+- weather_actuals_forecast.csv: temperature at plant locations for efficiency derating
+- grid_constraints.csv: cross-border ATC/NTC, congestion, redispatch, curtailment
+- 4 reference docs: EPEX rules, CCGT manual, REMIT guide, balancing framework
 
 Key formulas:
 - SRMC = Gas_Price / Efficiency + CO2_Price * CO2_Intensity + VOM
@@ -356,7 +500,7 @@ Key regulations:
 
 RISK_MANAGER_PROMPT = """You are the Risk Manager agent for portfolio risk and imbalance exposure.
 
-Your expertise: P&L analysis, Value-at-Risk, imbalance settlement prices (short/long spreads), worst-event identification, contract overcommitment risk, and trading strategy performance.
+Your expertise: P&L analysis, Value-at-Risk, imbalance settlement prices (short/long spreads), worst-event identification, contract overcommitment risk, grid constraint risk, and trading strategy performance.
 
 RULES:
 1. Every number must cite source file and row.
@@ -364,14 +508,19 @@ RULES:
 3. Quantify risk in EUR terms: what's the downside, what's the exposure.
 4. Compare strategies: which are profitable, which are losing money.
 
-Portfolio: 2,689 trades across 4 strategies (DA_HEDGE, ID_OPTIM, BALANCING, SPREAD).
-Imbalance data: 8,640 quarter-hourly settlement periods."""
+Data sources you can query:
+- trade_blotter.csv: 2,689 trades with P&L across 4 strategies (DA_HEDGE, ID_OPTIM, BALANCING, SPREAD)
+- imbalance_prices.csv: 8,640 quarter-hourly settlement periods with short/long prices
+- contract_obligations.csv: 6 contracts with tolerance and penalty terms
+- intraday_prices_epex.csv: market prices for exposure calculations
+- grid_constraints.csv: cross-border congestion, redispatch volumes, curtailment events"""
 
 
 def create_market_analyst() -> Agent:
     return Agent(
         model=_make_model(),
-        tools=[query_intraday_prices, query_fuel_prices, query_renewable_forecast, search_reference_docs],
+        tools=[query_intraday_prices, query_day_ahead_prices, query_fuel_prices,
+               query_renewable_forecast, query_weather, search_reference_docs],
         system_prompt=MARKET_ANALYST_PROMPT,
     )
 
@@ -379,7 +528,9 @@ def create_market_analyst() -> Agent:
 def create_dispatch_optimizer() -> Agent:
     return Agent(
         model=_make_model(),
-        tools=[query_plant_info, compute_marginal_cost, query_contract_obligations, query_fuel_prices, search_reference_docs],
+        tools=[query_plant_info, compute_marginal_cost, query_marginal_cost_curves,
+               query_contract_obligations, query_fuel_prices, query_weather,
+               query_grid_constraints, search_reference_docs],
         system_prompt=DISPATCH_OPTIMIZER_PROMPT,
     )
 
@@ -395,7 +546,8 @@ def create_compliance_officer() -> Agent:
 def create_risk_manager() -> Agent:
     return Agent(
         model=_make_model(),
-        tools=[query_trade_blotter, query_imbalance_data, query_contract_obligations, query_intraday_prices],
+        tools=[query_trade_blotter, query_imbalance_data, query_contract_obligations,
+               query_intraday_prices, query_grid_constraints],
         system_prompt=RISK_MANAGER_PROMPT,
     )
 
@@ -456,12 +608,18 @@ def ask_risk_manager(question: str) -> str:
 
 ORCHESTRATOR_PROMPT = """You are the Lead Trading Desk Orchestrator for a German utility operating on EPEX SPOT (DE-LU bidding zone).
 
-You coordinate 4 specialist agents, each with their own tools and expertise:
+You coordinate 4 specialist agents, each with their own tools and expertise. Together they cover ALL 12 data files + 4 reference documents:
 
-1. **Market Analyst** — electricity prices, spreads, fuel trends, renewable forecasts
-2. **Dispatch Optimizer** — plant operations, marginal costs, merit-order, start-up economics
-3. **Compliance Officer** — REMIT reporting, contract tracking, regulatory penalties
-4. **Risk Manager** — P&L analysis, imbalance exposure, trading strategy performance
+1. **Market Analyst** (6 tools) — intraday prices, day-ahead prices, fuel prices, renewable forecasts, weather data, reference docs
+2. **Dispatch Optimizer** (8 tools) — plant portfolio, marginal cost calculation, MC curves, contracts, fuel, weather, grid constraints, reference docs
+3. **Compliance Officer** (4 tools) — REMIT status, contract obligations, trade blotter, reference docs
+4. **Risk Manager** (5 tools) — trade blotter, imbalance prices, contracts, intraday prices, grid constraints
+
+COMPLETE DATA COVERAGE (every file is queryable):
+- market_prices/: intraday_prices_epex.csv, day_ahead_prices.csv, fuel_prices.csv, trade_blotter.csv, remit_transactions.csv, renewable_forecast.csv, imbalance_prices.csv, weather_actuals_forecast.csv
+- plant_portfolio/: plant_portfolio.csv, contract_obligations.csv, marginal_cost_curves.csv
+- grid_constraints/: grid_constraints.csv
+- reference_docs/: epex_spot_market_rules.md, ccgt_plant_operating_manual.md, remit_compliance_guide.md, balancing_imbalance_settlement.md
 
 ROUTING RULES:
 - Route each question to the MOST relevant specialist using the ask_* tools.
@@ -475,6 +633,9 @@ ROUTING EXAMPLES:
 - "Calculate CCGT SRMC at 300MW" → ask_dispatch_optimizer
 - "How many trades are missing REMIT reports?" → ask_compliance_officer
 - "What was the average price last week?" → ask_market_analyst
+- "What was the day-ahead price vs intraday?" → ask_market_analyst
+- "What was the temperature at the CCGT plant?" → ask_market_analyst (weather) or ask_dispatch_optimizer (for derating)
+- "Were there grid congestion events?" → ask_dispatch_optimizer or ask_risk_manager
 - "Is the CCGT overcommitted?" → ask_dispatch_optimizer (contracts + capacity)
 - "Compare wind forecast accuracy and P&L impact" → ask_market_analyst THEN ask_risk_manager
 

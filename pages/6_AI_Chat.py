@@ -105,11 +105,31 @@ If data doesn't support a claim, the agent says so.
         st.rerun()
 
 # ── Initialize Orchestrator ──────────────────────────────────────────────────
+_bedrock_available = True
 if "orchestrator" not in st.session_state and not _agentcore_mode:
-    with st.spinner("Initializing multi-agent orchestrator (1 orchestrator + 4 specialists)..."):
-        st.session_state.orchestrator = create_orchestrator()
+    try:
+        with st.spinner("Initializing multi-agent orchestrator (1 orchestrator + 4 specialists)..."):
+            st.session_state.orchestrator = create_orchestrator()
+    except Exception as e:
+        _bedrock_available = False
+        st.session_state.pop("orchestrator", None)
+
 if "messages" not in st.session_state:
     st.session_state.messages = []
+
+if not _bedrock_available and not _agentcore_mode:
+    st.warning(
+        "**AWS Bedrock credentials not configured.** "
+        "The AI Chat feature requires AWS credentials with access to Amazon Bedrock.\n\n"
+        "To enable this feature:\n"
+        "1. Configure AWS credentials: `aws configure` or set `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY`\n"
+        "2. Enable model access for `us.anthropic.claude-opus-4-6-v1` in the "
+        "[Bedrock console](https://console.aws.amazon.com/bedrock/) (us-east-1)\n"
+        "3. Reload this page\n\n"
+        "All other pages (Daily Briefing, Portfolio, Market Analysis, Dispatch, Scenarios, Compliance) "
+        "work without AWS credentials."
+    )
+    st.stop()
 
 # ── Example Questions ────────────────────────────────────────────────────────
 st.markdown("#### Example questions")
@@ -157,14 +177,17 @@ if prompt:
         status.markdown("*Orchestrator routing to specialist agent...*")
 
         try:
-            result = st.session_state.orchestrator(prompt)
-            content_blocks = result.message.get("content", [])
-            response_text = ""
-            for block in content_blocks:
-                if isinstance(block, dict) and "text" in block:
-                    response_text += block["text"]
-            if not response_text:
-                response_text = str(result.message)
+            if _agentcore_mode:
+                response_text = invoke_trading_chat_agent(prompt)
+            else:
+                result = st.session_state.orchestrator(prompt)
+                content_blocks = result.message.get("content", [])
+                response_text = ""
+                for block in content_blocks:
+                    if isinstance(block, dict) and "text" in block:
+                        response_text += block["text"]
+                if not response_text:
+                    response_text = str(result.message)
         except Exception as e:
             response_text = f"Error: {str(e)}\n\nTry rephrasing your question or resetting the conversation."
 

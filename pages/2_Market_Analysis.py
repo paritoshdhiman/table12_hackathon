@@ -10,7 +10,7 @@ from data_loader import (
 )
 from chart_theme import apply_dark_theme
 
-st.set_page_config(page_title="Market Analysis", page_icon="📈", layout="wide")
+st.set_page_config(page_title="DELTA Markets", page_icon="▲", layout="wide")
 st.title("Market Analysis")
 
 intraday = load_intraday_prices()
@@ -204,7 +204,7 @@ with tab5:
         filtered, x="hour", y="vwap_eur_mwh",
         title="VWAP Distribution by Hour",
         labels={"hour": "Hour of Day (CET)", "vwap_eur_mwh": "VWAP (€/MWh)"},
-        color_discrete_sequence=["#636EFA"],
+        color_discrete_sequence=["#DC2626"],
     )
     apply_dark_theme(fig_box)
     st.plotly_chart(fig_box, use_container_width=True)

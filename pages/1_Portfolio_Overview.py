@@ -9,7 +9,7 @@ from data_loader import (
 from domain import clean_spark_spread
 from chart_theme import apply_dark_theme
 
-st.set_page_config(page_title="Portfolio Overview", page_icon="⚡", layout="wide")
+st.set_page_config(page_title="DELTA Portfolio", page_icon="▲", layout="wide")
 st.title("Portfolio Overview")
 
 plants = load_plant_portfolio()

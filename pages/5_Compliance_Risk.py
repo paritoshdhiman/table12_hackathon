@@ -10,7 +10,7 @@ from data_loader import (
 from compliance import check_remit_compliance, check_contract_obligations, analyze_imbalance_exposure
 from chart_theme import apply_dark_theme
 
-st.set_page_config(page_title="Compliance & Risk", page_icon="🛡️", layout="wide")
+st.set_page_config(page_title="DELTA Risk", page_icon="▲", layout="wide")
 st.title("Compliance & Risk Monitor")
 
 trades = load_trade_blotter()
@@ -228,7 +228,7 @@ with tab4:
         fig_dd.add_trace(go.Scatter(
             x=drawdown.index, y=drawdown.values,
             name="Drawdown", fill="tozeroy",
-            fillcolor="rgba(255, 75, 75, 0.2)",
+            fillcolor="rgba(239, 68, 68, 0.2)",
             line=dict(color="#EF4444", width=1),
         ))
         fig_dd.update_layout(
@@ -244,7 +244,7 @@ with tab4:
     fig_rvar.add_trace(go.Scatter(
         x=rolling_var.index, y=rolling_var.values,
         name="Rolling 7d VaR 95%", line=dict(color="#F59E0B", width=2),
-        fill="tozeroy", fillcolor="rgba(255, 176, 46, 0.1)",
+        fill="tozeroy", fillcolor="rgba(245, 158, 11, 0.1)",
     ))
     fig_rvar.add_trace(go.Scatter(
         x=daily_pnl.index, y=daily_pnl.values,

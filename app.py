@@ -122,7 +122,8 @@ st.markdown("")
 # ── Architecture ────────────────────────────────────────────────────────────
 st.markdown("### Multi-Agent Architecture")
 st.markdown(
-    "**5 Claude Opus 4.6 agents** on Amazon Bedrock via Strands Agents SDK — "
+    "**5 Claude Opus 4.6 agents** on Amazon Bedrock via Strands Agents SDK, "
+    "deployed on **Amazon Bedrock AgentCore** — "
     "1 orchestrator routes queries to 4 specialist agents, each with dedicated tools and domain expertise. "
     "Greedy merit-order dispatch optimizer with Willans-line part-load efficiency, "
     "temperature-corrected capacity derating, and start-up cost economics."
@@ -170,6 +171,7 @@ with n3:
 
 st.caption(
     "AI: 5 Claude Opus 4.6 agents via Amazon Bedrock (1 orchestrator + 4 specialists) · "
+    "Deployment: Amazon Bedrock AgentCore · "
     "Framework: Strands Agents SDK 1.56 · "
     "Frontend: Streamlit + Plotly · "
     f"Data: 12 CSVs, 90 days EPEX SPOT DE-LU · "
