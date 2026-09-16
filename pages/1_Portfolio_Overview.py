@@ -157,3 +157,6 @@ f1.metric("Avg TTF Gas", f"€{avg_gas:.2f}/MWh", delta=f"Range: €{fuel['ttf_f
 f2.metric("Avg EU ETS Carbon", f"€{avg_co2:.2f}/tCO2", delta=f"Range: €{fuel['eu_ets_eur_tco2'].min():.1f}–€{fuel['eu_ets_eur_tco2'].max():.1f}")
 f3.metric("Avg Intraday VWAP", f"€{avg_price:.2f}/MWh", delta=f"Range: €{intraday['vwap_eur_mwh'].min():.1f}–€{intraday['vwap_eur_mwh'].max():.1f}")
 st.caption("Source: fuel_prices.csv (90 rows), intraday_prices_epex.csv (8,640 rows)")
+
+from chat_panel import render_chat_panel
+render_chat_panel()

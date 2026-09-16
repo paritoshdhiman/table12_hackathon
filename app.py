@@ -133,6 +133,7 @@ with n3:
     st.markdown("""
 <div class="nav-item"><span class="nav-label">Scenario Simulator</span> — What-if with sensitivity heatmaps</div>
 <div class="nav-item"><span class="nav-label">Compliance & Risk</span> — REMIT, contracts, imbalance, VaR</div>
+<div class="nav-item"><span class="nav-label">💬 AI Chat</span> — available from the sidebar on every page</div>
 """, unsafe_allow_html=True)
 
 st.caption(
@@ -143,3 +144,6 @@ st.caption(
     f"Data: 12 CSVs, 90 days EPEX SPOT DE-LU · "
     "Grounding: every number traces to source file and row"
 )
+
+from chat_panel import render_chat_panel
+render_chat_panel()

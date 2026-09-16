@@ -228,3 +228,6 @@ if st.button("⚡ Optimize Dispatch", type="primary"):
                           "marginal_cost", "market_price", "margin_eur", "source_citation"]],
                 use_container_width=True, hide_index=True, height=400,
             )
+
+from chat_panel import render_chat_panel
+render_chat_panel()

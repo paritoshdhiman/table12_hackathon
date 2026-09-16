@@ -227,3 +227,6 @@ with tab5:
     apply_dark_theme(fig_hm)
     st.plotly_chart(fig_hm, use_container_width=True)
     st.caption("Source: intraday_prices_epex.csv")
+
+from chat_panel import render_chat_panel
+render_chat_panel()

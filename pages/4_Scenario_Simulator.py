@@ -203,3 +203,6 @@ if st.button("🚀 Run Scenario Comparison", type="primary"):
         st.plotly_chart(fig_heat, use_container_width=True)
         st.caption("Source: 25 dispatch optimizations across gas/carbon price grid | "
                    f"Wind factor: {wind_factor:.0%}, Solar: {solar_factor:.0%}")
+
+from chat_panel import render_chat_panel
+render_chat_panel()

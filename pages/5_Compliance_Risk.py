@@ -311,3 +311,6 @@ with tab4:
             f"({breaches/len(daily_pnl)*100:.1f}%) — "
             f"{'within expected 5% at 95% confidence' if breaches/len(daily_pnl) < 0.08 else 'elevated — risk model may need recalibration'}")
     st.caption("Source: trade_blotter.csv (daily P&L aggregation) | Method: Historical simulation VaR")
+
+from chat_panel import render_chat_panel
+render_chat_panel()
