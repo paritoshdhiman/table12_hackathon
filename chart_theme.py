@@ -78,11 +78,13 @@ GLOBAL_CSS = """
     .nav-item { color: #D1D5DB; font-size: 0.9rem; line-height: 1.5; margin-bottom: 6px; }
     .nav-label { color: #F3F4F6; font-weight: 600; }
 
-    div[data-testid="stSidebarNav"] li:first-child span {
-        visibility: hidden; position: relative;
+    div[data-testid="stSidebarNav"] li:first-child a[href="/"] span,
+    div[data-testid="stSidebarNav"] li:first-child a[href="./"] span {
+        font-size: 0;
     }
-    div[data-testid="stSidebarNav"] li:first-child span::after {
-        content: "Home"; visibility: visible; position: absolute; left: 0;
+    div[data-testid="stSidebarNav"] li:first-child a[href="/"] span::after,
+    div[data-testid="stSidebarNav"] li:first-child a[href="./"] span::after {
+        content: "▲ Home"; font-size: 0.875rem; font-weight: 600;
     }
 </style>
 """
@@ -104,21 +106,31 @@ def apply_sidebar_branding():
     st.components.v1.html("""
 <script>
 function renameAppToHome() {
-    const sidebar = window.parent.document.querySelector('[data-testid="stSidebarNav"]');
-    if (!sidebar) return false;
-    const links = sidebar.querySelectorAll('a span');
-    for (const span of links) {
-        if (span.textContent.trim() === 'app') {
-            span.textContent = 'Home';
+    var doc = window.parent.document;
+    var nav = doc.querySelector('[data-testid="stSidebarNav"]');
+    if (!nav) return false;
+    var spans = nav.querySelectorAll('a span');
+    for (var i = 0; i < spans.length; i++) {
+        var t = spans[i].textContent.trim().toLowerCase();
+        if (t === 'app' || t === 'app.py') {
+            spans[i].textContent = 'Home';
             return true;
+        }
+    }
+    var links = nav.querySelectorAll('li a');
+    for (var j = 0; j < links.length; j++) {
+        var href = links[j].getAttribute('href') || '';
+        if (href === '/' || href === './' || href.endsWith('/app')) {
+            var s = links[j].querySelector('span');
+            if (s && s.textContent.trim() !== 'Home') { s.textContent = 'Home'; return true; }
         }
     }
     return false;
 }
 if (!renameAppToHome()) {
-    const obs = new MutationObserver(() => { if (renameAppToHome()) obs.disconnect(); });
+    var obs = new MutationObserver(function() { if (renameAppToHome()) obs.disconnect(); });
     obs.observe(window.parent.document.body, {childList: true, subtree: true});
-    setTimeout(() => obs.disconnect(), 5000);
+    setTimeout(function() { obs.disconnect(); }, 10000);
 }
 </script>
 """, height=0)
