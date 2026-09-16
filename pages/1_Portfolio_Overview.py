@@ -25,7 +25,7 @@ with st.sidebar:
     st.markdown("### Filters")
     all_strategies = ["All"] + sorted(trades["strategy"].unique().tolist())
     sel_strategy = st.selectbox("Strategy", all_strategies)
-    all_plants = ["All"] + sorted(trades["plant_id"].unique().tolist())
+    all_plants = ["All"] + sorted(trades["plant_id"].dropna().unique().tolist())
     sel_plant = st.selectbox("Plant", all_plants)
 
 filtered_trades = trades.copy()
