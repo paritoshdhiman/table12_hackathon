@@ -215,10 +215,11 @@ if st.button("⚡ Optimize Dispatch", type="primary"):
         peak_mw = ccgt_contracts[
             ccgt_contracts["delivery_profile"].isin(["BASELOAD", "PEAK"])
         ]["volume_mw"].sum()
-        if peak_mw > 430:
+        ccgt_capacity = plants[plants["plant_id"] == "RHEIN_CCGT"]["capacity_mw"].iloc[0]
+        if peak_mw > ccgt_capacity:
             st.warning(
                 f"⚠️ **Peak-hour overcommitment:** CCGT contracts total {peak_mw:.0f} MW "
-                f"vs plant capacity 430 MW. Optimizer capped dispatch and flagged shortfall."
+                f"vs plant capacity {ccgt_capacity:.0f} MW. Optimizer capped dispatch and flagged shortfall."
             )
 
         with st.expander("Detailed Dispatch Table (with source citations)"):

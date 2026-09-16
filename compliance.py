@@ -201,9 +201,10 @@ def _firm_thermal_delivery(
         n_peak = is_peak.sum()
         n_offpeak = (~is_peak).sum()
     else:
-        n_total = 8640
-        n_peak = 3120
-        n_offpeak = n_total - n_peak
+        n_days = (d_end - d_start).days + 1
+        weekdays = sum(1 for d in pd.date_range(d_start, periods=n_days) if d.weekday() < 5)
+        n_peak = weekdays * 48
+        n_offpeak = n_days * 96 - n_peak
 
     bl_mw = sum(
         ct["volume_mw"] for ct in all_plant_contracts

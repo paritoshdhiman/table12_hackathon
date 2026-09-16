@@ -61,7 +61,7 @@ def _mc_curves():
 def query_trade_blotter(date: str = "", plant_id: str = "", strategy: str = "",
                         direction: str = "", min_pnl: float = -999999,
                         max_pnl: float = 999999, limit: int = 20) -> str:
-    """Query the trade blotter (2,689 trades). Filter by date, plant_id, strategy, direction, or P&L range. Source: trade_blotter.csv"""
+    """Query the trade blotter. Filter by date, plant_id, strategy, direction, or P&L range. Source: trade_blotter.csv"""
     df = _trades()
     if date:
         df = df[df["timestamp_executed"].dt.date == pd.Timestamp(date).date()]
@@ -247,8 +247,9 @@ def query_contract_obligations() -> str:
         (df["plant_id"] == "RHEIN_CCGT") &
         (df["delivery_profile"].isin(["BASELOAD", "PEAK"]))
     ]["volume_mw"].sum()
-    if ccgt_peak > 430:
-        lines.append(f"\n  WARNING: CCGT peak commitments = {ccgt_peak} MW > 430 MW capacity!")
+    ccgt_cap = _plants().loc[_plants()["plant_id"] == "RHEIN_CCGT", "capacity_mw"].iloc[0]
+    if ccgt_peak > ccgt_cap:
+        lines.append(f"\n  WARNING: CCGT peak commitments = {ccgt_peak} MW > {ccgt_cap} MW capacity!")
     return "\n".join(lines)
 
 
@@ -456,15 +457,13 @@ Key formulas:
 
 DISPATCH_OPTIMIZER_PROMPT = """You are the Dispatch Optimizer agent for a 4-plant German utility portfolio.
 
-Plants: RHEIN_CCGT (430MW), NORDSEE_WIND (350MW), BAYERN_SOLAR (120MW), ISAR_OCGT (180MW peaker).
-
 Your expertise: merit-order dispatch, marginal cost calculation, part-load efficiency (Willans line), start-up economics (hot/warm/cold), ramp constraints, temperature derating, grid constraints, and contract obligation fulfillment.
 
 RULES:
 1. Every number must cite source file and row.
 2. Use tools to get actual plant parameters and fuel prices — never assume.
 3. Show the SRMC formula and all inputs when computing costs.
-4. Flag the CCGT overcommitment: contracts total 450MW peak but capacity is 430MW.
+4. Check for CCGT overcommitment: compare total peak-hour contract MW against plant capacity from plant_portfolio.csv.
 5. Check weather for temperature derating and grid constraints for curtailment/redispatch.
 
 Data sources you can query:

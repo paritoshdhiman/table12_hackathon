@@ -118,10 +118,11 @@ st.dataframe(contracts_display, use_container_width=True, hide_index=True)
 
 ccgt_contracts = contracts[contracts["plant_id"] == "RHEIN_CCGT"]
 peak_commitment = ccgt_contracts[ccgt_contracts["delivery_profile"].isin(["BASELOAD", "PEAK"])]["volume_mw"].sum()
-if peak_commitment > 430:
+ccgt_capacity = plants[plants["plant_id"] == "RHEIN_CCGT"]["capacity_mw"].iloc[0]
+if peak_commitment > ccgt_capacity:
     st.warning(
         f"⚠️ **CCGT Overcommitment Detected:** Peak-hour contract obligations total "
-        f"**{peak_commitment:.0f} MW** but Rheinhafen CCGT max capacity is **430 MW**. "
+        f"**{peak_commitment:.0f} MW** but Rheinhafen CCGT max capacity is **{ccgt_capacity:.0f} MW**. "
         f"Contracts: {', '.join(ccgt_contracts['contract_id'].tolist())}. "
         f"Resolution: curtail within tolerance bands or procure shortfall from market."
     )
