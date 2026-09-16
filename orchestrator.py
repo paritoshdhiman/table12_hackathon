@@ -200,7 +200,13 @@ def check_contract_compliance(date_start: str = "", date_end: str = "") -> str:
     if date_start and date_end:
         date_range = (pd.Timestamp(date_start).date(), pd.Timestamp(date_end).date())
 
-    result = check_contract_obligations(contracts, trades, date_range)
+    result = check_contract_obligations(
+        contracts, trades, date_range,
+        renewable_forecast=_renewable(),
+        intraday_prices=_intraday(),
+        fuel_prices=_fuel(),
+        plants=_plants(),
+    )
     head = result.head(5).to_string(index=False)
 
     total_penalty = result["penalty_exposure_eur"].sum()

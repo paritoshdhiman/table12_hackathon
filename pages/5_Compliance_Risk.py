@@ -5,7 +5,8 @@ import plotly.express as px
 import plotly.graph_objects as go
 from data_loader import (
     load_trade_blotter, load_remit_transactions, load_contract_obligations,
-    load_imbalance_prices, load_intraday_prices,
+    load_imbalance_prices, load_intraday_prices, load_renewable_forecast,
+    load_fuel_prices, load_plant_portfolio,
 )
 from compliance import check_remit_compliance, check_contract_obligations, analyze_imbalance_exposure
 from chart_theme import apply_dark_theme, apply_sidebar_branding
@@ -18,6 +19,9 @@ trades = load_trade_blotter()
 remit = load_remit_transactions()
 contracts = load_contract_obligations()
 imbalance = load_imbalance_prices()
+renewable_forecast = load_renewable_forecast()
+fuel_prices = load_fuel_prices()
+plants = load_plant_portfolio()
 
 tab1, tab2, tab3, tab4 = st.tabs(["REMIT Compliance", "Contract Obligations", "Imbalance Exposure", "Value-at-Risk"])
 
@@ -81,7 +85,13 @@ with tab1:
 
 with tab2:
     st.header("Contract Obligation Fulfillment")
-    obligations = check_contract_obligations(contracts, trades)
+    obligations = check_contract_obligations(
+        contracts, trades,
+        renewable_forecast=renewable_forecast,
+        intraday_prices=load_intraday_prices(),
+        fuel_prices=fuel_prices,
+        plants=plants,
+    )
 
     for _, row in obligations.iterrows():
         status_icon = "✅" if row["within_tolerance"] else "❌"
@@ -115,7 +125,28 @@ with tab2:
     )
     apply_dark_theme(fig_ob)
     st.plotly_chart(fig_ob, use_container_width=True)
-    st.caption("Source: contract_obligations.csv + trade_blotter.csv (SELL trades matched by plant_id)")
+    ccgt_bl = obligations[
+        (obligations["plant_id"] == "RHEIN_CCGT") &
+        (obligations["profile"].isin(["BASELOAD", "PEAK"]))
+    ]
+    ccgt_committed_mw = ccgt_bl["volume_mw"].sum()
+    ccgt_cap = plants[plants["plant_id"] == "RHEIN_CCGT"]["capacity_mw"].iloc[0]
+    if ccgt_committed_mw > ccgt_cap:
+        st.warning(
+            f"**CCGT Overcommitment Risk:** Peak-hour obligations total "
+            f"**{ccgt_committed_mw:.0f} MW** but RHEIN_CCGT capacity is "
+            f"**{ccgt_cap:.0f} MW** — {ccgt_committed_mw - ccgt_cap:.0f} MW shortfall "
+            f"pro-rated across contracts, driving the -{abs(ccgt_bl['deviation_pct'].mean()):.1f}% avg deviation."
+        )
+
+    st.caption(
+        "**Methodology:** Renewable PPAs — delivery estimated from renewable_forecast.csv "
+        "(wind/solar capped at contract MW). SHAPED contracts — as-produced basis "
+        "(committed = delivered). Firm thermal BASELOAD/PEAK — plant delivers full commitment; "
+        "shortfall only from physical overcommitment when co-located contracts exceed plant capacity. "
+        "Source: contract_obligations.csv, plant_portfolio.csv, intraday_prices_epex.csv, "
+        "renewable_forecast.csv, fuel_prices.csv"
+    )
 
     total_penalty = obligations["penalty_exposure_eur"].sum()
     if total_penalty > 0:
