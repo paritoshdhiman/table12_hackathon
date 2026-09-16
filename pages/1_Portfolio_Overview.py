@@ -7,9 +7,10 @@ from data_loader import (
     load_contract_obligations, load_remit_transactions, load_intraday_prices,
 )
 from domain import clean_spark_spread
+from chart_theme import apply_dark_theme
 
 st.set_page_config(page_title="Portfolio Overview", page_icon="⚡", layout="wide")
-st.title("📊 Portfolio Overview")
+st.title("Portfolio Overview")
 
 plants = load_plant_portfolio()
 trades = load_trade_blotter()
@@ -75,8 +76,8 @@ with col_left:
         title="Total P&L by Strategy (90 days)",
         color_discrete_sequence=px.colors.qualitative.Set2,
     )
-    fig.update_layout(showlegend=False, template="plotly_dark",
-                      paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)")
+    fig.update_layout(showlegend=False)
+    apply_dark_theme(fig)
     st.plotly_chart(fig, use_container_width=True)
     st.caption("Source: trade_blotter.csv, grouped by strategy column")
 
@@ -89,7 +90,7 @@ with col_right:
         title="Trade Count by Strategy & Direction",
         color_discrete_map={"BUY": "#636EFA", "SELL": "#EF553B"},
     )
-    fig2.update_layout(template="plotly_dark", paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)")
+    apply_dark_theme(fig2)
     st.plotly_chart(fig2, use_container_width=True)
     st.caption("Source: trade_blotter.csv")
 
@@ -103,7 +104,7 @@ fig3 = px.line(
     labels={"timestamp_executed": "Date", "cumulative_pnl": "Cumulative P&L (€)"},
 )
 fig3.update_traces(line_color="#00D4AA", fill="tozeroy", fillcolor="rgba(0, 212, 170, 0.1)")
-fig3.update_layout(template="plotly_dark", paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)")
+apply_dark_theme(fig3)
 st.plotly_chart(fig3, use_container_width=True)
 st.caption("Source: trade_blotter.csv, pnl_eur cumulative sum ordered by timestamp_executed")
 

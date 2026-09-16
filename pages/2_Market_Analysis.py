@@ -11,7 +11,7 @@ from data_loader import (
 from chart_theme import apply_dark_theme
 
 st.set_page_config(page_title="Market Analysis", page_icon="📈", layout="wide")
-st.title("📈 Market Analysis")
+st.title("Market Analysis")
 
 intraday = load_intraday_prices()
 da = load_day_ahead_prices()

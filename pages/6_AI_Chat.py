@@ -15,7 +15,7 @@ st.markdown("""
         font-size: 0.85rem;
         color: #8892a0;
     }
-    .agent-route.active { border-left: 3px solid #00D4AA; color: #FAFAFA; }
+    .agent-route.active { border-color: #00D4AA44; color: #FAFAFA; }
     .tool-call {
         background: #0E1117;
         border: 1px solid #00D4AA33;
@@ -29,10 +29,8 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-st.title("🤖 AI Trading Analyst")
-st.markdown(
-    "*Claude Opus 4.6 via Amazon Bedrock — multi-tool agent with grounded data access*"
-)
+st.title("AI Trading Analyst")
+st.caption("Claude Opus 4.6 via Amazon Bedrock — multi-tool agent with grounded data access")
 
 # ── Agent Architecture Sidebar ───────────────────────────────────────────────
 with st.sidebar:

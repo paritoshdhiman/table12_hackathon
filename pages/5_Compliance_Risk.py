@@ -11,7 +11,7 @@ from compliance import check_remit_compliance, check_contract_obligations, analy
 from chart_theme import apply_dark_theme
 
 st.set_page_config(page_title="Compliance & Risk", page_icon="🛡️", layout="wide")
-st.title("🛡️ Compliance & Risk Monitor")
+st.title("Compliance & Risk Monitor")
 
 trades = load_trade_blotter()
 remit = load_remit_transactions()

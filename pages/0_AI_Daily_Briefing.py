@@ -10,27 +10,21 @@ from domain import compute_srmc, clean_spark_spread, part_load_efficiency, temp_
 from compliance import check_remit_compliance
 
 st.set_page_config(page_title="AI Daily Briefing", page_icon="📋", layout="wide")
+st.title("AI Daily Briefing")
 
 st.markdown("""
 <style>
-    .briefing-header {
-        background: linear-gradient(135deg, #0a2e1f 0%, #1a1f2e 100%);
-        border: 1px solid #00D4AA33;
-        border-radius: 12px;
-        padding: 24px;
-        margin-bottom: 20px;
-    }
-    .briefing-header h2 { color: #00D4AA; margin: 0; }
-    .briefing-header p { color: #8892a0; margin: 5px 0 0 0; }
     .insight-box {
-        background: linear-gradient(135deg, #1a1f2e 0%, #252b3b 100%);
-        border-left: 4px solid #00D4AA;
-        border-radius: 0 8px 8px 0;
+        background: #1a1f2e;
+        border: 1px solid #2a3040;
+        border-radius: 8px;
         padding: 16px;
         margin: 10px 0;
     }
-    .insight-box.warning { border-left-color: #FFB02E; }
-    .insight-box.danger { border-left-color: #FF4B4B; }
+    .insight-box.warning { border-color: #FFB02E44; }
+    .insight-box.danger { border-color: #FF4B4B44; }
+    .insight-box strong { color: #e0e4ea; }
+    .insight-box em { color: #666e7a; font-size: 0.82rem; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -47,12 +41,8 @@ weather = load_weather()
 
 all_dates = sorted(intraday["date"].unique())
 
-st.markdown("""
-<div class="briefing-header">
-    <h2>📋 AI-Generated Trading Briefing</h2>
-    <p>Claude analyzes all data sources and generates a comprehensive briefing for any trading day</p>
-</div>
-""", unsafe_allow_html=True)
+st.markdown("### AI-Generated Trading Briefing")
+st.caption("Claude analyzes all data sources and generates a comprehensive briefing for any trading day")
 
 selected_date = st.date_input(
     "Select briefing date",

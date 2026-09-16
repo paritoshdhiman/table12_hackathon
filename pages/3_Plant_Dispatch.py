@@ -13,7 +13,7 @@ from domain import compute_srmc_at_load
 from chart_theme import apply_dark_theme
 
 st.set_page_config(page_title="Plant Dispatch", page_icon="🏭", layout="wide")
-st.title("🏭 Plant Dispatch Optimizer")
+st.title("Plant Dispatch Optimizer")
 
 intraday = load_intraday_prices()
 fuel = load_fuel_prices()
