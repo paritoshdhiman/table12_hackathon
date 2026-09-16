@@ -97,7 +97,7 @@ with col_left:
         pnl_by_strategy, x="Strategy", y="P&L (€)",
         color="Strategy",
         title="Total P&L by Strategy (90 days)",
-        color_discrete_sequence=px.colors.qualitative.Set2,
+        color_discrete_sequence=["#DC2626", "#9CA3AF", "#EF4444", "#6B7280", "#F59E0B"],
     )
     fig.update_layout(showlegend=False)
     apply_dark_theme(fig)

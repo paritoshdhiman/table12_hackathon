@@ -87,10 +87,10 @@ st.markdown("")
 # ── Architecture ────────────────────────────────────────────────────────────
 st.markdown("### Multi-Agent Architecture")
 st.markdown(
-    "**5 Claude agents** on Amazon Bedrock via Strands Agents SDK, "
+    "**5 Claude Opus agents** on Amazon Bedrock via Strands Agents SDK, "
     "deployed on **Amazon Bedrock AgentCore** — "
-    "1 **Opus orchestrator** routes queries to 4 **Sonnet specialists**, each with dedicated tools and domain expertise. "
-    "Cost-optimized: Opus for reasoning and synthesis, Sonnet for fast data retrieval. "
+    "1 **Opus orchestrator** routes queries to 4 **Opus specialists**, each with dedicated tools and domain expertise. "
+    "All agents run Claude Opus for maximum reasoning capability. "
     "Greedy merit-order dispatch optimizer with Willans-line part-load efficiency, "
     "temperature-corrected capacity derating, and start-up cost economics."
 )
@@ -98,7 +98,7 @@ st.markdown(
 arch_l, arch_r = st.columns(2)
 with arch_l:
     st.markdown("""
-**Specialist agents** (Claude Sonnet — fast data retrieval)
+**Specialist agents** (Claude Opus)
 - **Market Analyst** — prices, spreads, fuel trends, renewable forecasts (6 tools)
 - **Dispatch Optimizer** — SRMC, merit-order, start-up costs, ramp constraints (8 tools)
 - **Compliance Officer** — REMIT reporting, contract tolerances, penalties (4 tools)
@@ -137,7 +137,7 @@ with n3:
 """, unsafe_allow_html=True)
 
 st.caption(
-    "AI: 1 Opus orchestrator + 4 Sonnet specialists via Amazon Bedrock · "
+    "AI: 5 Claude Opus agents via Amazon Bedrock · "
     "Deployment: Amazon Bedrock AgentCore · "
     "Framework: Strands Agents SDK · "
     "Frontend: Streamlit + Plotly · "

@@ -8,7 +8,7 @@ from data_loader import (
 )
 from domain import compute_srmc, clean_spark_spread, part_load_efficiency, temp_corrected_efficiency, temp_corrected_capacity
 from compliance import check_remit_compliance
-from chart_theme import apply_sidebar_branding
+from chart_theme import apply_sidebar_branding, apply_dark_theme
 
 st.set_page_config(page_title="DELTA Daily Briefing", page_icon="▲", layout="wide")
 apply_sidebar_branding()
@@ -117,10 +117,8 @@ if st.button("🧠 Generate AI Briefing", type="primary", use_container_width=Tr
             title=f"Price Profile — {selected_date}",
             yaxis_title="€/MWh", height=400,
             hovermode="x unified",
-            template="plotly_dark",
-            paper_bgcolor="rgba(0,0,0,0)",
-            plot_bgcolor="rgba(0,0,0,0)",
         )
+        apply_dark_theme(fig)
         st.plotly_chart(fig, use_container_width=True)
         st.caption(f"Source: intraday_prices_epex.csv | SRMC calculated from fuel_prices.csv (TTF={gas_p:.2f}, ETS={co2_p:.2f})")
 

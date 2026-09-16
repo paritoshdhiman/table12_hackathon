@@ -7,7 +7,7 @@ from strands.tools import tool
 DATA_DIR = os.path.join(os.path.dirname(__file__), "data")
 AWS_REGION = os.environ.get("AWS_REGION", "us-east-1")
 ORCHESTRATOR_MODEL = os.environ.get("BEDROCK_MODEL_ID", "us.anthropic.claude-opus-4-6-v1")
-SPECIALIST_MODEL = os.environ.get("SPECIALIST_MODEL_ID", "us.anthropic.claude-sonnet-4-20250514-v1:0")
+SPECIALIST_MODEL = os.environ.get("SPECIALIST_MODEL_ID", "us.anthropic.claude-opus-4-6-v1")
 
 _cache = {}
 
@@ -616,7 +616,7 @@ def ask_risk_manager(question: str) -> str:
 
 ORCHESTRATOR_PROMPT = """You are the Lead Trading Desk Orchestrator for a German utility operating on EPEX SPOT (DE-LU bidding zone).
 
-You coordinate 4 specialist agents (Claude Sonnet — fast, cost-efficient), each with their own tools and expertise. Together they cover ALL 12 data files + 4 reference documents. You (Claude Opus) synthesize their findings into coherent answers.
+You coordinate 4 specialist agents (Claude Opus), each with their own tools and expertise. Together they cover ALL 12 data files + 4 reference documents. You synthesize their findings into coherent answers.
 
 1. **Market Analyst** (6 tools) — intraday prices, day-ahead prices, fuel prices, renewable forecasts, weather data, reference docs
 2. **Dispatch Optimizer** (8 tools) — plant portfolio, marginal cost calculation, MC curves, contracts, fuel, weather, grid constraints, reference docs
