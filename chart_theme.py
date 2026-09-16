@@ -38,17 +38,24 @@ def apply_sidebar_branding():
     </div>
 </div>
 """, unsafe_allow_html=True)
-    st.markdown("""
-<style>
-    div[data-testid="stSidebarNav"] li:first-child span {
-        visibility: hidden;
-        position: relative;
+    st.components.v1.html("""
+<script>
+function renameAppToHome() {
+    const sidebar = window.parent.document.querySelector('[data-testid="stSidebarNav"]');
+    if (!sidebar) return false;
+    const links = sidebar.querySelectorAll('a span');
+    for (const span of links) {
+        if (span.textContent.trim() === 'app') {
+            span.textContent = 'Home';
+            return true;
+        }
     }
-    div[data-testid="stSidebarNav"] li:first-child span::after {
-        content: "Home";
-        visibility: visible;
-        position: absolute;
-        left: 0;
-    }
-</style>
-""", unsafe_allow_html=True)
+    return false;
+}
+if (!renameAppToHome()) {
+    const obs = new MutationObserver(() => { if (renameAppToHome()) obs.disconnect(); });
+    obs.observe(window.parent.document.body, {childList: true, subtree: true});
+    setTimeout(() => obs.disconnect(), 5000);
+}
+</script>
+""", height=0)

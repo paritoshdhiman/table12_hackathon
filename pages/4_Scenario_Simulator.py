@@ -135,9 +135,11 @@ if st.button("🚀 Run Scenario Comparison", type="primary"):
             )
         if co2_price != actual_co2:
             direction = "increase" if co2_price > actual_co2 else "decrease"
+            ccgt_co2i = plants[plants["plant_id"] == "RHEIN_CCGT"]["co2_intensity_tco2_mwh"].iloc[0]
+            ocgt_co2i = plants[plants["plant_id"] == "ISAR_OCGT"]["co2_intensity_tco2_mwh"].iloc[0]
             changes.append(
                 f"Carbon price {direction} from €{actual_co2:.1f} to €{co2_price:.1f}/tCO2 "
-                f"affects thermal generation costs (CCGT: 0.349 tCO2/MWh, OCGT: 0.545 tCO2/MWh)."
+                f"affects thermal generation costs (CCGT: {ccgt_co2i} tCO2/MWh, OCGT: {ocgt_co2i} tCO2/MWh)."
             )
         if wind_factor != 1.0:
             changes.append(

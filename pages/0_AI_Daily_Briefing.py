@@ -6,7 +6,7 @@ from data_loader import (
     load_renewable_forecast, load_remit_transactions, load_plant_portfolio,
     load_contract_obligations, load_imbalance_prices, load_weather,
 )
-from domain import compute_srmc, clean_spark_spread, part_load_efficiency, temp_corrected_efficiency
+from domain import compute_srmc, clean_spark_spread, part_load_efficiency, temp_corrected_efficiency, temp_corrected_capacity
 from compliance import check_remit_compliance
 from chart_theme import apply_sidebar_branding
 
@@ -40,6 +40,17 @@ plants = load_plant_portfolio()
 contracts = load_contract_obligations()
 imbalance = load_imbalance_prices()
 weather = load_weather()
+
+ccgt = plants[plants["plant_id"] == "RHEIN_CCGT"].iloc[0]
+ocgt = plants[plants["plant_id"] == "ISAR_OCGT"].iloc[0]
+wind_plant = plants[plants["plant_id"] == "NORDSEE_WIND"].iloc[0]
+ccgt_eff = ccgt["efficiency_pct"] / 100
+ccgt_co2 = ccgt["co2_intensity_tco2_mwh"]
+ccgt_vom = ccgt["variable_om_eur_mwh"]
+ocgt_eff = ocgt["efficiency_pct"] / 100
+ocgt_co2 = ocgt["co2_intensity_tco2_mwh"]
+ocgt_vom = ocgt["variable_om_eur_mwh"]
+wind_cap = wind_plant["capacity_mw"]
 
 all_dates = sorted(intraday["date"].unique())
 
@@ -107,11 +118,11 @@ if st.button("🧠 Generate AI Briefing", type="primary", use_container_width=Tr
             name="Day-Ahead", line=dict(color="#FF6692", width=1.5, dash="dot"),
         ))
 
-        ccgt_srmc = compute_srmc(gas_p, 0.58, co2_p, 0.349, 2.7)
+        ccgt_srmc = compute_srmc(gas_p, ccgt_eff, co2_p, ccgt_co2, ccgt_vom)
         fig.add_hline(y=ccgt_srmc, line_dash="dash", line_color="#9CA3AF",
                       annotation_text=f"CCGT SRMC €{ccgt_srmc:.0f}")
 
-        ocgt_srmc = compute_srmc(gas_p, 0.371, co2_p, 0.545, 4.2)
+        ocgt_srmc = compute_srmc(gas_p, ocgt_eff, co2_p, ocgt_co2, ocgt_vom)
         fig.add_hline(y=ocgt_srmc, line_dash="dash", line_color="#6B7280",
                       annotation_text=f"OCGT SRMC €{ocgt_srmc:.0f}")
 
@@ -146,7 +157,7 @@ if st.button("🧠 Generate AI Briefing", type="primary", use_container_width=Tr
         # Insight 2: Thermal Dispatch Economics
         periods_ccgt_profitable = (day_prices["vwap_eur_mwh"] > ccgt_srmc).sum()
         periods_ocgt_profitable = (day_prices["vwap_eur_mwh"] > ocgt_srmc).sum()
-        css = clean_spark_spread(avg_vwap, gas_p, 0.58, co2_p, 0.349)
+        css = clean_spark_spread(avg_vwap, gas_p, ccgt_eff, co2_p, ccgt_co2)
 
         st.markdown(f"""
         <div class="insight-box">
@@ -163,7 +174,7 @@ if st.button("🧠 Generate AI Briefing", type="primary", use_container_width=Tr
             avg_wind = day_renew["wind_forecast_mw"].mean()
             avg_solar = day_renew["solar_forecast_mw"].mean()
             avg_error = day_renew["forecast_error_mw"].mean()
-            wind_pct = avg_wind / 350 * 100
+            wind_pct = avg_wind / wind_cap * 100
 
             box_class = "warning" if abs(avg_error) > 20 else ""
             st.markdown(f"""
@@ -231,15 +242,17 @@ if st.button("🧠 Generate AI Briefing", type="primary", use_container_width=Tr
             ccgt_weather = day_weather[day_weather["location"] == "Karlsruhe_CCGT"]
             if not ccgt_weather.empty:
                 avg_temp = ccgt_weather["temperature_c"].mean()
-                if avg_temp > 15:
-                    eff_penalty = 0.5 * (avg_temp - 15)
+                rated_eff_pct = ccgt["efficiency_pct"]
+                corrected_eff = temp_corrected_efficiency(ccgt_eff, avg_temp)
+                if corrected_eff < ccgt_eff:
+                    eff_penalty = (1 - corrected_eff / ccgt_eff) * 100
                     st.markdown(f"""
                     <div class="insight-box warning">
                         <strong>🌡️ Temperature Impact:</strong> Karlsruhe avg temperature
                         <strong>{avg_temp:.1f}°C</strong> — CCGT efficiency derated by
                         <strong>{eff_penalty:.1f}%</strong> from ISO conditions (15°C).
-                        Effective efficiency: {58.0 * (1 - eff_penalty/100):.1f}% vs rated 58.0%.
-                        <br><em>Source: weather_actuals_forecast.csv | Formula: -0.5%/°C above 15°C (ccgt_plant_operating_manual.md)</em>
+                        Effective efficiency: {corrected_eff*100:.1f}% vs rated {rated_eff_pct:.1f}%.
+                        <br><em>Source: weather_actuals_forecast.csv, plant_portfolio.csv | Formula: -0.5%/°C above 15°C (ccgt_plant_operating_manual.md)</em>
                     </div>
                     """, unsafe_allow_html=True)
 
@@ -255,8 +268,9 @@ if st.button("🧠 Generate AI Briefing", type="primary", use_container_width=Tr
         elif css < -5:
             recommendations.append(f"**Reduce CCGT to minimum load** — negative CSS (€{css:.1f}/MWh), only run for contract obligations")
 
+        ocgt_hot_start = ocgt["start_cost_hot_eur"]
         if periods_ocgt_profitable > 10:
-            recommendations.append(f"**Deploy OCGT peaker** for {periods_ocgt_profitable} high-price periods (hot start €15K, expected revenue justifies)")
+            recommendations.append(f"**Deploy OCGT peaker** for {periods_ocgt_profitable} high-price periods (hot start €{ocgt_hot_start:,.0f}, expected revenue justifies)")
         else:
             recommendations.append("**Keep OCGT offline** — insufficient price spikes to justify start-up cost")
 

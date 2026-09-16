@@ -44,7 +44,10 @@ total_volume_mwh = (trades["volume_mw"] * 0.25).sum()
 avg_gas = fuel["ttf_front_month_eur_mwh"].mean()
 avg_co2 = fuel["eu_ets_eur_tco2"].mean()
 avg_price = intraday["vwap_eur_mwh"].mean()
-avg_css = clean_spark_spread(avg_price, avg_gas, 0.58, avg_co2, 0.349)
+ccgt = plants[plants["plant_id"] == "RHEIN_CCGT"].iloc[0]
+ccgt_eff = ccgt["efficiency_pct"] / 100
+ccgt_co2 = ccgt["co2_intensity_tco2_mwh"]
+avg_css = clean_spark_spread(avg_price, avg_gas, ccgt_eff, avg_co2, ccgt_co2)
 
 trades_with_remit = set(remit["trade_id"].unique())
 all_trade_ids = set(trades["trade_id"].unique())
@@ -118,7 +121,7 @@ st.dataframe(contracts_display, use_container_width=True, hide_index=True)
 
 ccgt_contracts = contracts[contracts["plant_id"] == "RHEIN_CCGT"]
 peak_commitment = ccgt_contracts[ccgt_contracts["delivery_profile"].isin(["BASELOAD", "PEAK"])]["volume_mw"].sum()
-ccgt_capacity = plants[plants["plant_id"] == "RHEIN_CCGT"]["capacity_mw"].iloc[0]
+ccgt_capacity = ccgt["capacity_mw"]
 if peak_commitment > ccgt_capacity:
     st.warning(
         f"⚠️ **CCGT Overcommitment Detected:** Peak-hour contract obligations total "
