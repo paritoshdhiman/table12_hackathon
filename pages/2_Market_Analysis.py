@@ -8,9 +8,10 @@ from data_loader import (
     load_intraday_prices, load_day_ahead_prices, load_fuel_prices,
     load_renewable_forecast,
 )
-from chart_theme import apply_dark_theme
+from chart_theme import apply_dark_theme, apply_sidebar_branding
 
 st.set_page_config(page_title="DELTA Markets", page_icon="▲", layout="wide")
+apply_sidebar_branding()
 st.title("Market Analysis")
 
 intraday = load_intraday_prices()

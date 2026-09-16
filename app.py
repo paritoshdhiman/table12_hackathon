@@ -1,5 +1,6 @@
 import streamlit as st
 from data_loader import extract_data_if_needed
+from chart_theme import apply_sidebar_branding
 
 st.set_page_config(
     page_title="DELTA — Dynamic Energy Load & Trading Analytics",
@@ -7,6 +8,8 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="expanded",
 )
+
+apply_sidebar_branding()
 
 extract_data_if_needed()
 
@@ -24,6 +27,7 @@ st.markdown("""
     div[data-testid="stSidebar"] {
         background: linear-gradient(180deg, #0A0A0A 0%, #1C1C1C 100%);
     }
+
 
     .status-badge {
         display: inline-block;

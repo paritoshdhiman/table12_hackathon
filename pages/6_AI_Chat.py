@@ -2,8 +2,10 @@ import streamlit as st
 import time
 from multi_agent import create_orchestrator
 from agentcore_client import is_agentcore_enabled, invoke_trading_chat_agent
+from chart_theme import apply_sidebar_branding
 
 st.set_page_config(page_title="DELTA AI Analyst", page_icon="▲", layout="wide")
+apply_sidebar_branding()
 
 st.markdown("""
 <style>

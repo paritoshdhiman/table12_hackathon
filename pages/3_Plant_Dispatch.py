@@ -10,9 +10,10 @@ from data_loader import (
 )
 from dispatch import optimize_dispatch_for_date, summarize_dispatch
 from domain import compute_srmc_at_load
-from chart_theme import apply_dark_theme
+from chart_theme import apply_dark_theme, apply_sidebar_branding
 
 st.set_page_config(page_title="DELTA Dispatch", page_icon="▲", layout="wide")
+apply_sidebar_branding()
 st.title("Plant Dispatch Optimizer")
 
 intraday = load_intraday_prices()

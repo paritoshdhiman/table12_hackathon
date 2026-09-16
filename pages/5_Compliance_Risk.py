@@ -8,9 +8,10 @@ from data_loader import (
     load_imbalance_prices, load_intraday_prices,
 )
 from compliance import check_remit_compliance, check_contract_obligations, analyze_imbalance_exposure
-from chart_theme import apply_dark_theme
+from chart_theme import apply_dark_theme, apply_sidebar_branding
 
 st.set_page_config(page_title="DELTA Risk", page_icon="▲", layout="wide")
+apply_sidebar_branding()
 st.title("Compliance & Risk Monitor")
 
 trades = load_trade_blotter()

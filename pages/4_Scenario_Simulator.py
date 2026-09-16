@@ -9,9 +9,10 @@ from data_loader import (
     load_weather, load_plant_portfolio, load_contract_obligations,
 )
 from dispatch import optimize_dispatch_for_date, summarize_dispatch
-from chart_theme import apply_dark_theme
+from chart_theme import apply_dark_theme, apply_sidebar_branding
 
 st.set_page_config(page_title="DELTA Scenarios", page_icon="▲", layout="wide")
+apply_sidebar_branding()
 st.title("Scenario Simulator")
 
 intraday = load_intraday_prices()

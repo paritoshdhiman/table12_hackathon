@@ -8,8 +8,10 @@ from data_loader import (
 )
 from domain import compute_srmc, clean_spark_spread, part_load_efficiency, temp_corrected_efficiency
 from compliance import check_remit_compliance
+from chart_theme import apply_sidebar_branding
 
 st.set_page_config(page_title="DELTA Daily Briefing", page_icon="▲", layout="wide")
+apply_sidebar_branding()
 st.title("▲ DELTA Daily Briefing")
 
 st.markdown("""

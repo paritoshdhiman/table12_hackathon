@@ -7,9 +7,10 @@ from data_loader import (
     load_contract_obligations, load_remit_transactions, load_intraday_prices,
 )
 from domain import clean_spark_spread
-from chart_theme import apply_dark_theme
+from chart_theme import apply_dark_theme, apply_sidebar_branding
 
 st.set_page_config(page_title="DELTA Portfolio", page_icon="▲", layout="wide")
+apply_sidebar_branding()
 st.title("Portfolio Overview")
 
 plants = load_plant_portfolio()
