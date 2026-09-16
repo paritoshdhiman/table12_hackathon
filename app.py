@@ -56,11 +56,13 @@ st.markdown("# ▲ DELTA")
 st.caption("Dynamic Energy Load & Trading Analytics · DE-LU Bidding Zone · EPEX SPOT Continuous Market · Quarter-Hourly · 90-Day Analysis Window")
 
 # ── Live Status ─────────────────────────────────────────────────────────────
-from data_loader import load_trade_blotter, load_remit_transactions, load_intraday_prices, load_fuel_prices
+from data_loader import load_trade_blotter, load_remit_transactions, load_intraday_prices, load_fuel_prices, load_contract_obligations, load_plant_portfolio
 trades = load_trade_blotter()
 remit = load_remit_transactions()
 intraday = load_intraday_prices()
 fuel = load_fuel_prices()
+contracts = load_contract_obligations()
+plants = load_plant_portfolio()
 
 total_pnl = trades["pnl_eur"].sum()
 accepted = len(remit[remit["status"] == "ACCEPTED"])
@@ -75,22 +77,32 @@ s2.metric("Latest VWAP", f"€{latest_price:.1f}/MWh")
 s3.metric("TTF Gas", f"€{latest_gas:.1f}/MWh")
 s4.metric("REMIT Compliance", f"{compliance_rate:.1f}%",
           delta=f"-{missing_remit} unreported", delta_color="inverse")
-s5.metric("Data Coverage", "90 Days", delta="8,640 periods")
+s5.metric("Data Coverage", "90 Days", delta=f"{len(intraday):,} periods")
 
 st.markdown("")
 
 # ── Critical Findings ────────────────────────────────────────────────────────
 col_l, col_r = st.columns(2)
 
+ccgt_contracts = contracts[contracts["plant_id"] == "RHEIN_CCGT"]
+ccgt_peak_contracts = ccgt_contracts[ccgt_contracts["delivery_profile"].isin(["BASELOAD", "PEAK"])]
+ccgt_peak_mw = ccgt_peak_contracts["volume_mw"].sum()
+ccgt_capacity = plants[plants["plant_id"] == "RHEIN_CCGT"]["capacity_mw"].iloc[0]
+ccgt_breakdown = " + ".join(
+    f"{row['contract_id']}: {row['volume_mw']:.0f} MW"
+    for _, row in ccgt_peak_contracts.iterrows()
+)
+ccgt_shortfall = ccgt_peak_mw - ccgt_capacity
+
 with col_l:
-    st.markdown("""
+    st.markdown(f"""
     <div class="finding-box">
         <h4 style="color: #DC2626;">CCGT Overcommitment Risk</h4>
-        <p>Peak-hour contract obligations total <strong>450 MW</strong>
-        (BL-001: 200 MW + PK-001: 150 MW + BL-002: 100 MW)
-        but RHEIN_CCGT maximum capacity is <strong>430 MW</strong>.</p>
-        <p><strong>Action:</strong> Curtail BL-001 within 3% tolerance (194 MW) or procure 20 MW shortfall.</p>
-        <p class="source">contract_obligations.csv rows 4-6 · plant_portfolio.csv row 2</p>
+        <p>Peak-hour contract obligations total <strong>{ccgt_peak_mw:.0f} MW</strong>
+        ({ccgt_breakdown})
+        but RHEIN_CCGT maximum capacity is <strong>{ccgt_capacity:.0f} MW</strong>.</p>
+        <p><strong>Action:</strong> Curtail within tolerance bands or procure {ccgt_shortfall:.0f} MW shortfall from market.</p>
+        <p class="source">contract_obligations.csv · plant_portfolio.csv</p>
     </div>
     """, unsafe_allow_html=True)
 
@@ -126,12 +138,12 @@ with arch_l:
 - **Risk Manager** — P&L, imbalance exposure, strategy performance (4 tools)
 """)
 with arch_r:
-    st.markdown("""
+    st.markdown(f"""
 **Analytical capabilities**
 - Merit-order dispatch optimization with Willans-line part-load efficiency
 - Scenario simulation: 5x5 gas/carbon sensitivity grid
 - Value-at-Risk (95%/99%) with drawdown and rolling breach detection
-- CCGT overcommitment detection (450 MW contracted vs 430 MW capacity)
+- CCGT overcommitment detection ({ccgt_peak_mw:.0f} MW contracted vs {ccgt_capacity:.0f} MW capacity)
 """)
 
 st.markdown("")
@@ -160,6 +172,6 @@ st.caption(
     "AI: 5 Claude Opus 4.6 agents via Amazon Bedrock (1 orchestrator + 4 specialists) · "
     "Framework: Strands Agents SDK 1.56 · "
     "Frontend: Streamlit + Plotly · "
-    "Data: 12 CSVs, 55,060 rows, 90 days EPEX SPOT DE-LU · "
+    f"Data: 12 CSVs, 90 days EPEX SPOT DE-LU · "
     "Grounding: every number traces to source file and row"
 )
