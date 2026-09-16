@@ -60,7 +60,10 @@ Every insight cites its source file and formula.
 
 ### Portfolio Overview
 
-Static view of the full plant fleet and 90-day trading performance.
+Full plant fleet and 90-day trading performance with optional filtering.
+
+**How to use:**
+- Use the **sidebar filters** to narrow by Strategy (DA_HEDGE, ID_OPTIM, BALANCING, SPREAD) and/or Plant -- all charts and metrics update accordingly
 
 **What you see:**
 - **Plant fleet cards** -- 4 plants with capacity, technology, efficiency, and minimum stable load
